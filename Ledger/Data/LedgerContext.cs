@@ -20,6 +20,12 @@ namespace Ledger.Data
                 .WithMany()
                 .HasForeignKey(l => l.NumeroConta)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            modelBuilder.HasSequence<int>("TransacaoIdSeq");
+
+            modelBuilder.Entity<Lancamento>()
+                .Property(l => l.IdTransacao)
+                .HasDefaultValueSql("nextval('\"TransacaoIdSeq\"')");
         }
     }
 }
