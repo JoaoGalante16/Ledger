@@ -17,7 +17,7 @@ public class Lancamento
     public DateTime DataGravacao { get; set; }
     public string? Descricao { get; set; }
     [ForeignKey("LancamentoReferencia")]
-    public int? LancamentoReferenciaId { get; set; }
+    public int? IdLancamentoReferencia { get; set; }
     public virtual Lancamento? LancamentoReferencia { get; set; }
 
 }

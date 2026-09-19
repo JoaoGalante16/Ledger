@@ -14,8 +14,12 @@ public class LancamentoService : ILancamentoService
         _context = context;
     }
 
-    public List<ReadLancamentoDto> Criar(CreateLancamentoDto dto)
+    public List<ReadLancamentoDto>? Criar(CreateLancamentoDto dto)
     {
+        var contaOrigem = _context.Contas.FirstOrDefault(c => c.Numero.Equals(dto.NumeroContaOrigem));
+        var contaDestino = _context.Contas.FirstOrDefault(c => c.Numero.Equals(dto.NumeroContaDestino));
+        if(contaOrigem is null || contaDestino is null) return  null;
+        
         var idTransacao = _context.Database
             .SqlQuery<int>($"SELECT nextval('\"TransacaoIdSeq\"') as \"Value\"")
             .First();
@@ -74,7 +78,7 @@ public class LancamentoService : ILancamentoService
             DataTransacao = l.DataTransacao,
             DataGravacao = l.DataGravacao,
             Descricao = l.Descricao,
-            LancamentoReferenciaId = l.LancamentoReferenciaId
+            LancamentoReferenciaId = l.IdLancamentoReferencia
         }).ToList();
     }
 
@@ -91,14 +95,14 @@ public class LancamentoService : ILancamentoService
             DataTransacao = lancamento.DataTransacao,
             DataGravacao = lancamento.DataGravacao,
             Descricao = lancamento.Descricao,
-            LancamentoReferenciaId = lancamento.LancamentoReferenciaId
+            LancamentoReferenciaId = lancamento.IdLancamentoReferencia
         };
     }
 
     public List<ReadLancamentoDto>? BuscarParDeLancamentos(int idTransacao)
     {
         var parDtosLancamentos = new List<ReadLancamentoDto>();
-        var parlancamento = _context.Lancamentos.Where(l => l.IdTransacao.Equals(idTransacao)).ToList();
+        var parlancamento = _context.Lancamentos.Where(l => l.IdTransacao.Equals(idTransacao)).OrderBy(l => l.Valor).ToList();
         if (parlancamento.Count != 2) return null;
         var lancamentoOrigem = new ReadLancamentoDto()
         {
@@ -109,7 +113,7 @@ public class LancamentoService : ILancamentoService
             DataTransacao = parlancamento[0].DataTransacao,
             DataGravacao = parlancamento[0].DataGravacao,
             Descricao = parlancamento[0].Descricao,
-            LancamentoReferenciaId = parlancamento[0].LancamentoReferenciaId
+            LancamentoReferenciaId = parlancamento[0].IdLancamentoReferencia
         };
 
         var lancamentoDestino = new ReadLancamentoDto()
@@ -121,9 +125,63 @@ public class LancamentoService : ILancamentoService
             DataTransacao = parlancamento[1].DataTransacao,
             DataGravacao = parlancamento[1].DataGravacao,
             Descricao = parlancamento[1].Descricao,
-            LancamentoReferenciaId = parlancamento[1].LancamentoReferenciaId
+            LancamentoReferenciaId = parlancamento[1].IdLancamentoReferencia
         };
         parDtosLancamentos.AddRange(lancamentoOrigem, lancamentoDestino);
         return parDtosLancamentos;
+    }
+
+    public List<ReadLancamentoDto>? CriarLancamentoCorrecao(CreateLancamentoCorrecaoDto dto)
+    {
+        var lancamentosReferencias = BuscarParDeLancamentos(dto.IdLancamentoReferencia);
+        if (lancamentosReferencias is null) return null;
+        
+        var idTransacao = _context.Database
+            .SqlQuery<int>($"SELECT nextval('\"TransacaoIdSeq\"') as \"Value\"")
+            .First();
+        
+        var lancamentoOrigemCorrecao = new Lancamento()
+        {
+            IdTransacao = idTransacao,
+            NumeroConta = lancamentosReferencias[0].NumeroConta,
+            Valor = dto.Valor,
+            DataTransacao = dto.DataTransacao,
+            DataGravacao = DateTime.UtcNow,
+            Descricao = dto.Descricao,
+            IdLancamentoReferencia = dto.IdLancamentoReferencia
+        };
+
+        var lancamentoDestinoCorrecao = new Lancamento()
+        {
+            IdTransacao = idTransacao,
+            NumeroConta =  lancamentosReferencias[1].NumeroConta,
+            Valor = -dto.Valor,
+            DataTransacao = dto.DataTransacao,
+            DataGravacao = DateTime.UtcNow,
+            Descricao = dto.Descricao,
+            IdLancamentoReferencia = dto.IdLancamentoReferencia
+        };
+
+        _context.Lancamentos.Add(lancamentoOrigemCorrecao);
+        _context.Lancamentos.Add(lancamentoDestinoCorrecao);
+        _context.SaveChanges();
+        
+        return new List<ReadLancamentoDto>
+        {
+            new()
+            {
+                Id = lancamentoOrigemCorrecao.Id, IdTransacao = lancamentoOrigemCorrecao.IdTransacao,
+                NumeroConta = lancamentoOrigemCorrecao.NumeroConta, Valor = lancamentoOrigemCorrecao.Valor,
+                DataTransacao = lancamentoOrigemCorrecao.DataTransacao, DataGravacao = lancamentoOrigemCorrecao.DataGravacao,
+                Descricao = lancamentoOrigemCorrecao.Descricao, LancamentoReferenciaId = lancamentoOrigemCorrecao.IdLancamentoReferencia
+            },
+            new()
+            {
+                Id = lancamentoDestinoCorrecao.Id, IdTransacao = lancamentoDestinoCorrecao.IdTransacao,
+                NumeroConta = lancamentoDestinoCorrecao.NumeroConta, Valor = lancamentoDestinoCorrecao.Valor,
+                DataTransacao = lancamentoDestinoCorrecao.DataTransacao, DataGravacao = lancamentoDestinoCorrecao.DataGravacao,
+                Descricao = lancamentoDestinoCorrecao.Descricao, LancamentoReferenciaId = lancamentoDestinoCorrecao.IdLancamentoReferencia
+            }
+        };
     }
 }

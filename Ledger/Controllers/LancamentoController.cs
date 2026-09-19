@@ -20,6 +20,7 @@ public class LancamentoController : ControllerBase
     public IActionResult CriaLancamento([FromBody] CreateLancamentoDto dto)
     {
         var lancamento = _lancamentoService.Criar(dto);
+        if (lancamento is null) return NotFound();
         return Ok(lancamento);
     }
 
@@ -45,5 +46,13 @@ public class LancamentoController : ControllerBase
         var lancamentos = _lancamentoService.BuscarParDeLancamentos(id);
         if (lancamentos is null) return NotFound();
         return Ok(lancamentos);
+    }
+
+    [HttpPost("correcao")]
+    public IActionResult CriarLancamentoDeCorrecao([FromBody] CreateLancamentoCorrecaoDto dto)
+    {
+        var lancamentoCorrecao = _lancamentoService.CriarLancamentoCorrecao(dto);
+        if (lancamentoCorrecao is null) return NotFound();
+        return Ok(lancamentoCorrecao);
     }
 }
