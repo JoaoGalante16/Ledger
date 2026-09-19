@@ -10,11 +10,12 @@ public class LancamentoController : ControllerBase
 {
     private readonly ILancamentoService _lancamentoService;
 
+    
     public LancamentoController(ILancamentoService lancamentoService)
     {
         _lancamentoService = lancamentoService;
     }
-        
+    
     [HttpPost]
     public IActionResult CriaLancamento([FromBody] CreateLancamentoDto dto)
     {
@@ -22,12 +23,13 @@ public class LancamentoController : ControllerBase
         return Ok(lancamento);
     }
 
-    [HttpGet]
-    public IActionResult Listarlancamentos()
-    {
-        var lancamento = _lancamentoService.Listar();
-        return Ok(lancamento);
-    }
+    // Metodo criado com minimal API
+    // [HttpGet]
+    // public IActionResult Listarlancamentos()
+    // {
+    //     var lancamento = _lancamentoService.Listar();
+    //     return Ok(lancamento);
+    // }
 
     [HttpGet("{id}")]
     public IActionResult BuscarLancamentoPorId(int id)
