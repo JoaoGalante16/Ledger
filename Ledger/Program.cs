@@ -1,4 +1,6 @@
 using Ledger.Data;
+using Ledger.Data.ContaDtos;
+using Ledger.Data.LancamentoDtos;
 using Ledger.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,8 +18,9 @@ builder.Services.AddDbContext<LedgerContext>(opts => opts.UseLazyLoadingProxies(
 builder.Services.AddScoped<IContaService,ContaService>();
 builder.Services.AddScoped<ILancamentoService, LancamentoService>();
 
-var app = builder.Build();
+builder.Services.AddValidation();
 
+var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -31,4 +34,17 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapGet("/lancamento", (ILancamentoService lancamentoService) =>
+{
+    var lancamentos = lancamentoService.Listar();
+    return Results.Ok(lancamentos);
+});
+
+app.MapPost("/conta", (IContaService contaService, CreateContaDto dto) =>
+{
+    var conta = contaService.Criar(dto);
+    return Results.Ok(conta);
+});
+
 app.Run();
+

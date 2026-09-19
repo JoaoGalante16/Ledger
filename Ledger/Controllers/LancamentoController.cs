@@ -10,24 +10,27 @@ public class LancamentoController : ControllerBase
 {
     private readonly ILancamentoService _lancamentoService;
 
+    
     public LancamentoController(ILancamentoService lancamentoService)
     {
         _lancamentoService = lancamentoService;
     }
-        
+    
     [HttpPost]
     public IActionResult CriaLancamento([FromBody] CreateLancamentoDto dto)
     {
         var lancamento = _lancamentoService.Criar(dto);
+        if (lancamento is null) return NotFound();
         return Ok(lancamento);
     }
 
-    [HttpGet]
-    public IActionResult Listarlancamentos()
-    {
-        var lancamento = _lancamentoService.Listar();
-        return Ok(lancamento);
-    }
+    // Metodo criado com minimal API
+    // [HttpGet]
+    // public IActionResult Listarlancamentos()
+    // {
+    //     var lancamento = _lancamentoService.Listar();
+    //     return Ok(lancamento);
+    // }
 
     [HttpGet("{id}")]
     public IActionResult BuscarLancamentoPorId(int id)
@@ -43,5 +46,13 @@ public class LancamentoController : ControllerBase
         var lancamentos = _lancamentoService.BuscarParDeLancamentos(id);
         if (lancamentos is null) return NotFound();
         return Ok(lancamentos);
+    }
+
+    [HttpPost("correcao")]
+    public IActionResult CriarLancamentoDeCorrecao([FromBody] CreateLancamentoCorrecaoDto dto)
+    {
+        var lancamentoCorrecao = _lancamentoService.CriarLancamentoCorrecao(dto);
+        if (lancamentoCorrecao is null) return NotFound();
+        return Ok(lancamentoCorrecao);
     }
 }
