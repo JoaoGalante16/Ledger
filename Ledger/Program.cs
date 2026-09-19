@@ -1,4 +1,5 @@
 using Ledger.Data;
+using Ledger.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,9 @@ builder.Services.AddOpenApi();
 
 var connectionString = builder.Configuration.GetConnectionString("LedgerConnection");
 builder.Services.AddDbContext<LedgerContext>(opts => opts.UseLazyLoadingProxies().UseNpgsql(connectionString));
+
+builder.Services.AddScoped<IContaService,ContaService>();
+builder.Services.AddScoped<ILancamentoService, LancamentoService>();
 
 var app = builder.Build();
 
