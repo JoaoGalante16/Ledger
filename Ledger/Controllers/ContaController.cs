@@ -15,13 +15,12 @@ public class ContaController : ControllerBase
         _contaService = contaService;
     }
     
-    // Metodo criado com minimal API
-    // [HttpPost]
-    // public IActionResult CriaConta([FromBody] CreateContaDto dto)
-    // {
-    //     var conta = _contaService.Criar(dto);
-    //     return Ok(conta);    
-    // }
+    [HttpPost]
+    public IActionResult CriaConta([FromBody] CreateContaDto dto)
+    {
+        var conta = _contaService.Criar(dto);
+        return Ok(conta);    
+    }
     
     [HttpGet]
     public IActionResult ListarContas()
