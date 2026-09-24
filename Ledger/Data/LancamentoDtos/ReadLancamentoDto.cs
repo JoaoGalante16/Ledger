@@ -10,5 +10,5 @@ public class ReadLancamentoDto
     public DateTime DataTransacao { get; set; }
     public DateTime DataGravacao { get; set; }
     public string? Descricao { get; set; }
-    public int? LancamentoReferenciaId { get; set; }
+    public int? IdLancamentoReferencia { get; set; }
 }

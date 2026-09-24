@@ -24,13 +24,12 @@ public class LancamentoController : ControllerBase
         return Ok(lancamento);
     }
 
-    // Metodo criado com minimal API
-    // [HttpGet]
-    // public IActionResult Listarlancamentos()
-    // {
-    //     var lancamento = _lancamentoService.Listar();
-    //     return Ok(lancamento);
-    // }
+    [HttpGet]
+    public IActionResult Listarlancamentos()
+    {
+        var lancamento = _lancamentoService.Listar();
+        return Ok(lancamento);
+    }
 
     [HttpGet("{id}")]
     public IActionResult BuscarLancamentoPorId(int id)

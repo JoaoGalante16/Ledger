@@ -15,10 +15,10 @@ builder.Services.AddOpenApi();
 var connectionString = builder.Configuration.GetConnectionString("LedgerConnection");
 builder.Services.AddDbContext<LedgerContext>(opts => opts.UseLazyLoadingProxies().UseNpgsql(connectionString));
 
+builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
+
 builder.Services.AddScoped<IContaService,ContaService>();
 builder.Services.AddScoped<ILancamentoService, LancamentoService>();
-
-builder.Services.AddValidation();
 
 var app = builder.Build();
 
@@ -33,18 +33,6 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
-
-app.MapGet("/lancamento", (ILancamentoService lancamentoService) =>
-{
-    var lancamentos = lancamentoService.Listar();
-    return Results.Ok(lancamentos);
-});
-
-app.MapPost("/conta", (IContaService contaService, CreateContaDto dto) =>
-{
-    var conta = contaService.Criar(dto);
-    return Results.Ok(conta);
-});
 
 app.Run();
 
