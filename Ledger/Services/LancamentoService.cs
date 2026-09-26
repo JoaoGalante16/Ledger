@@ -18,11 +18,19 @@ public class LancamentoService : ILancamentoService
         _mapper = mapper;
     }
 
-    public List<ReadLancamentoDto>? Criar(CreateLancamentoDto dto)
+    public List<ReadLancamentoDto>? Criar(CreateLancamentoDto dto,  string idUsuario, bool eAdmin)
     {
-        var contaOrigem = _context.Contas.FirstOrDefault(c => c.Numero.Equals(dto.NumeroContaOrigem));
+        Conta? contaOrigem;
+        if (eAdmin)
+        {
+            contaOrigem = _context.Contas.FirstOrDefault(c => c.Numero.Equals(dto.NumeroContaOrigem));
+        }
+        else
+        {
+            contaOrigem = _context.Contas.FirstOrDefault(c => c.Numero.Equals(dto.NumeroContaOrigem) && c.IdUsuario.Equals(idUsuario));
+        }
         var contaDestino = _context.Contas.FirstOrDefault(c => c.Numero.Equals(dto.NumeroContaDestino));
-        if(contaOrigem is null || contaDestino is null) return  null;
+        if(contaOrigem is null || contaDestino is null) return null;
         
         var idTransacao = _context.Database
             .SqlQuery<int>($"SELECT nextval('\"TransacaoIdSeq\"') as \"Value\"")
@@ -46,14 +54,26 @@ public class LancamentoService : ILancamentoService
         return _mapper.Map<List<ReadLancamentoDto>>(new[] { lancamentoOrigem, lancamentoDestino });
     }
 
-    public List<ReadLancamentoDto> Listar()
+    public List<ReadLancamentoDto> Listar(string idUsuario, bool eAdmin)
     {
-        return _mapper.Map<List<ReadLancamentoDto>>(_context.Lancamentos.ToList());
+        if (eAdmin)
+        {
+            return _mapper.Map<List<ReadLancamentoDto>>(_context.Lancamentos.ToList());
+        }
+        return _mapper.Map<List<ReadLancamentoDto>>(_context.Lancamentos.Where(l => l.Conta.IdUsuario.Equals(idUsuario)));
     }
 
-    public ReadLancamentoDto? Buscar(int id)
+    public ReadLancamentoDto? Buscar(int id, string idUsuario, bool eAdmin)
     {
-        var lancamento = _context.Lancamentos.FirstOrDefault(l => l.Id.Equals(id));
+        Lancamento? lancamento;
+        if (eAdmin)
+        {
+            lancamento = _context.Lancamentos.FirstOrDefault(l => l.Id.Equals(id));
+        }
+        else
+        {
+            lancamento = _context.Lancamentos.FirstOrDefault(l => l.Id.Equals(id) && l.Conta.IdUsuario.Equals(idUsuario));
+        }
         if (lancamento is null) return null;
         return _mapper.Map<ReadLancamentoDto>(lancamento);
     }
@@ -63,7 +83,6 @@ public class LancamentoService : ILancamentoService
         var parlancamento = _context.Lancamentos.Where(l => l.IdTransacao.Equals(idTransacao)).OrderBy(l => l.Valor).ToList();
         if (parlancamento.Count != 2) return null;
         return _mapper.Map<List<ReadLancamentoDto>>(parlancamento);
-
     }
 
     public List<ReadLancamentoDto>? CriarLancamentoCorrecao(CreateLancamentoCorrecaoDto dto)

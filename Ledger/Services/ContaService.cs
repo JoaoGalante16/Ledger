@@ -25,7 +25,7 @@ public class ContaService : IContaService
         return _mapper.Map<ReadContaDto>(conta);
     }
 
-    public List<ReadContaDto> Listar(string idUsuario, bool eAdmin)
+    public List<ReadContaDto> Listar(string? idUsuario, bool eAdmin)
     {
         if (eAdmin)
         {
@@ -34,27 +34,52 @@ public class ContaService : IContaService
         return _mapper.Map<List<ReadContaDto>>(_context.Contas.Where(c => c.IdUsuario == idUsuario).ToList());
     }
 
-    public bool Atualizar(UpdateContaDto dto, int id)
+    public bool Atualizar(UpdateContaDto dto, int id, string idUsuario, bool eAdmin)
     {
-        var conta = _context.Contas.FirstOrDefault(c =>  c.Numero.Equals(id));
-        if  (conta is null) return false;
+        Conta? conta;
+        if (eAdmin)
+        {
+            conta = _context.Contas.FirstOrDefault(c =>  c.Numero.Equals(id));
+        }
+        else
+        {
+            conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
+        }
+        if (conta is null) return false;
         _mapper.Map(dto, conta);
         _context.SaveChanges();
         return true;
+
     }
 
-    public bool Remover(int id)
+    public bool Remover(int id, string idUsuario, bool eAdmin)
     {
-        var conta = _context.Contas.FirstOrDefault(c=>c.Numero.Equals(id));
+        Conta? conta;
+        if (eAdmin)
+        {
+            conta = _context.Contas.FirstOrDefault(c=>c.Numero.Equals(id));
+        }
+        else
+        {
+            conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
+        }
         if (conta is null) return false;
         _context.Contas.Remove(conta);
         _context.SaveChanges();
         return true;
     }
 
-    public ReadContaDto? Buscar(int id)
+    public ReadContaDto? Buscar(int id, string idUsuario, bool eAdmin)
     {
-        var conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id));
+        Conta? conta;
+        if (eAdmin)
+        {
+            conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id));
+        }
+        else
+        {
+            conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
+        }
         if (conta is null) return null;
         return _mapper.Map<ReadContaDto>(conta);
     }

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Ledger.Data.ContaDtos;
+using Ledger.Models;
 using Ledger.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,9 +22,8 @@ public class ContaController : ControllerBase
     [HttpPost]
     public IActionResult CriaConta([FromBody] CreateContaDto dto)
     {
-        var idUsuario = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (idUsuario is null) return BadRequest();
-        var conta = _contaService.Criar(dto, idUsuario);
+        var conta = _contaService.Criar(dto, User.ObterId());
+        if(conta is null) return NotFound();
         return Ok(conta);    
     }
     
@@ -31,10 +31,8 @@ public class ContaController : ControllerBase
     [HttpGet]
     public IActionResult ListarContas()
     {
-        bool eAdmin = false;
-        var idUsuario = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if(User.IsInRole("Admin")) eAdmin = true;
-        var contas = _contaService.Listar(idUsuario, eAdmin);
+        var contas = _contaService.Listar(User.ObterId(), User.EhAdmin());
+        if(contas is null) return NotFound();
         return Ok(contas);
     }
 
@@ -42,7 +40,7 @@ public class ContaController : ControllerBase
     [HttpPut("{numero}")]
     public IActionResult AtualizaConta([FromBody] UpdateContaDto dto,int numero)
     {
-        var sucesso = _contaService.Atualizar(dto, numero);
+        var sucesso = _contaService.Atualizar(dto, numero, User.ObterId(), User.EhAdmin());
         if (sucesso is false) return NotFound();
         return NoContent();
     }
@@ -51,7 +49,7 @@ public class ContaController : ControllerBase
     [HttpDelete("{numero}")]
     public IActionResult ExcluirConta(int numero)
     {
-        var sucesso = _contaService.Remover(numero);
+        var sucesso = _contaService.Remover(numero,  User.ObterId(), User.EhAdmin());
         if (sucesso is false) return NotFound();
         return NoContent();
     }
@@ -60,7 +58,7 @@ public class ContaController : ControllerBase
     [HttpGet("{numero}")]
     public IActionResult BuscarContaPorNumero(int numero)
     {
-        var conta = _contaService.Buscar(numero);
+        var conta = _contaService.Buscar(numero, User.ObterId(), User.EhAdmin());
         if (conta is null) return NotFound();
         return Ok(conta);
     }

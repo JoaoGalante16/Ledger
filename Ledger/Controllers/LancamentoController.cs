@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Ledger.Data.LancamentoDtos;
+using Ledger.Models;
 using Ledger.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +12,6 @@ namespace Ledger.Controllers;
 public class LancamentoController : ControllerBase
 {
     private readonly ILancamentoService _lancamentoService;
-
     
     public LancamentoController(ILancamentoService lancamentoService)
     {
@@ -21,7 +22,7 @@ public class LancamentoController : ControllerBase
     [HttpPost]
     public IActionResult CriaLancamento([FromBody] CreateLancamentoDto dto)
     {
-        var lancamento = _lancamentoService.Criar(dto);
+        var lancamento = _lancamentoService.Criar(dto, User.ObterId(), User.EhAdmin());
         if (lancamento is null) return NotFound();
         return Ok(lancamento);
     }
@@ -30,7 +31,7 @@ public class LancamentoController : ControllerBase
     [HttpGet]
     public IActionResult Listarlancamentos()
     {
-        var lancamento = _lancamentoService.Listar();
+        var lancamento = _lancamentoService.Listar(User.ObterId(), User.EhAdmin());
         return Ok(lancamento);
     }
 
@@ -38,12 +39,12 @@ public class LancamentoController : ControllerBase
     [HttpGet("{id}")]
     public IActionResult BuscarLancamentoPorId(int id)
     {
-        var lancamento = _lancamentoService.Buscar(id);
+        var lancamento = _lancamentoService.Buscar(id, User.ObterId(), User.EhAdmin());
         if (lancamento is null) return NotFound();
         return Ok(lancamento);
     }
     
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpGet("transacao/{id}")]
     public IActionResult BuscarParDeLancamentoPorIdTransacao(int id)
     {
@@ -52,7 +53,7 @@ public class LancamentoController : ControllerBase
         return Ok(lancamentos);
     }
 
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpPost("correcao")]
     public IActionResult CriarLancamentoDeCorrecao([FromBody] CreateLancamentoCorrecaoDto dto)
     {
