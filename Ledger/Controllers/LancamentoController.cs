@@ -1,5 +1,9 @@
+using System.Security.Claims;
 using Ledger.Data.LancamentoDtos;
+using Ledger.Models;
+using Ledger.Results;
 using Ledger.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ledger.Controllers;
@@ -9,49 +13,57 @@ namespace Ledger.Controllers;
 public class LancamentoController : ControllerBase
 {
     private readonly ILancamentoService _lancamentoService;
-
     
     public LancamentoController(ILancamentoService lancamentoService)
     {
         _lancamentoService = lancamentoService;
     }
     
+    [Authorize]
     [HttpPost]
     public IActionResult CriaLancamento([FromBody] CreateLancamentoDto dto)
     {
-        var lancamento = _lancamentoService.Criar(dto);
-        if (lancamento is null) return NotFound();
-        return Ok(lancamento);
+        var resultado = _lancamentoService.Criar(dto, User.ObterId(), User.EhAdmin());
+        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
+        if (resultado.IsFailed) return Problem();
+        return Ok(resultado.Value);
     }
 
+    [Authorize]
     [HttpGet]
     public IActionResult Listarlancamentos()
     {
-        var lancamento = _lancamentoService.Listar();
+        var lancamento = _lancamentoService.Listar(User.ObterId(), User.EhAdmin());
         return Ok(lancamento);
     }
 
+    [Authorize]
     [HttpGet("{id}")]
     public IActionResult BuscarLancamentoPorId(int id)
     {
-        var lancamento = _lancamentoService.Buscar(id);
-        if (lancamento is null) return NotFound();
-        return Ok(lancamento);
+        var resultado = _lancamentoService.Buscar(id, User.ObterId(), User.EhAdmin());
+        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
+        if (resultado.IsFailed) return Problem();
+        return Ok(resultado.Value);
     }
     
+    [Authorize(Roles = "Admin")]
     [HttpGet("transacao/{id}")]
     public IActionResult BuscarParDeLancamentoPorIdTransacao(int id)
     {
-        var lancamentos = _lancamentoService.BuscarParDeLancamentos(id);
-        if (lancamentos is null) return NotFound();
-        return Ok(lancamentos);
+        var resultado = _lancamentoService.BuscarParDeLancamentos(id);
+        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
+        if (resultado.IsFailed) return Problem();
+        return Ok(resultado.Value);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost("correcao")]
     public IActionResult CriarLancamentoDeCorrecao([FromBody] CreateLancamentoCorrecaoDto dto)
     {
-        var lancamentoCorrecao = _lancamentoService.CriarLancamentoCorrecao(dto);
-        if (lancamentoCorrecao is null) return NotFound();
-        return Ok(lancamentoCorrecao);
+        var resultado = _lancamentoService.CriarLancamentoCorrecao(dto);
+        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
+        if (resultado.IsFailed) return Problem();
+        return Ok(resultado.Value);
     }
 }

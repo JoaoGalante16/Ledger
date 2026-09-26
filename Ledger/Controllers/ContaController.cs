@@ -1,5 +1,9 @@
 using Ledger.Data.ContaDtos;
+using Ledger.Models;
+using Ledger.Results;
 using Ledger.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ledger.Controllers;
@@ -15,41 +19,49 @@ public class ContaController : ControllerBase
         _contaService = contaService;
     }
     
+    [Authorize]
     [HttpPost]
     public IActionResult CriaConta([FromBody] CreateContaDto dto)
     {
-        var conta = _contaService.Criar(dto);
-        return Ok(conta);    
+        var conta = _contaService.Criar(dto, User.ObterId());
+        return Ok(conta);  
     }
     
+    [Authorize]
     [HttpGet]
     public IActionResult ListarContas()
     {
-        var contas = _contaService.Listar();
+        var contas = _contaService.Listar(User.ObterId(), User.EhAdmin());
         return Ok(contas);
     }
 
+    [Authorize]
     [HttpPut("{numero}")]
     public IActionResult AtualizaConta([FromBody] UpdateContaDto dto,int numero)
     {
-        var sucesso = _contaService.Atualizar(dto, numero);
-        if (sucesso is false) return NotFound();
+        var resultado = _contaService.Atualizar(dto, numero, User.ObterId(), User.EhAdmin());
+        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
+        if (resultado.IsFailed) return Problem();
         return NoContent();
     }
 
+    [Authorize]
     [HttpDelete("{numero}")]
     public IActionResult ExcluirConta(int numero)
     {
-        var sucesso = _contaService.Remover(numero);
-        if (sucesso is false) return NotFound();
+        var resultado = _contaService.Remover(numero,  User.ObterId(), User.EhAdmin());
+        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
+        if (resultado.IsFailed) return Problem();
         return NoContent();
     }
     
+    [Authorize]
     [HttpGet("{numero}")]
     public IActionResult BuscarContaPorNumero(int numero)
     {
-        var conta = _contaService.Buscar(numero);
-        if (conta is null) return NotFound();
-        return Ok(conta);
+        var resultado = _contaService.Buscar(numero, User.ObterId(), User.EhAdmin());
+        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
+        if (resultado.IsFailed) return Problem();
+        return Ok(resultado.Value);
     }
 }
