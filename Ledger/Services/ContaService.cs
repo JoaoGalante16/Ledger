@@ -1,7 +1,10 @@
+using System.Runtime.InteropServices.JavaScript;
 using AutoMapper;
+using FluentResults;
 using Ledger.Data;
 using Ledger.Data.ContaDtos;
 using Ledger.Models;
+using Ledger.Results;
 
 namespace Ledger.Services;
 
@@ -23,9 +26,10 @@ public class ContaService : IContaService
         _context.Contas.Add(conta);
         _context.SaveChanges();
         return _mapper.Map<ReadContaDto>(conta);
+
     }
 
-    public List<ReadContaDto> Listar(string? idUsuario, bool eAdmin)
+    public List<ReadContaDto> Listar(string idUsuario, bool eAdmin)
     {
         if (eAdmin)
         {
@@ -34,7 +38,7 @@ public class ContaService : IContaService
         return _mapper.Map<List<ReadContaDto>>(_context.Contas.Where(c => c.IdUsuario == idUsuario).ToList());
     }
 
-    public bool Atualizar(UpdateContaDto dto, int id, string idUsuario, bool eAdmin)
+    public Result Atualizar(UpdateContaDto dto, int id, string idUsuario, bool eAdmin)
     {
         Conta? conta;
         if (eAdmin)
@@ -45,14 +49,14 @@ public class ContaService : IContaService
         {
             conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
         }
-        if (conta is null) return false;
+        if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
         _mapper.Map(dto, conta);
         _context.SaveChanges();
-        return true;
+        return Result.Ok();
 
     }
 
-    public bool Remover(int id, string idUsuario, bool eAdmin)
+    public Result Remover(int id, string idUsuario, bool eAdmin)
     {
         Conta? conta;
         if (eAdmin)
@@ -63,13 +67,13 @@ public class ContaService : IContaService
         {
             conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
         }
-        if (conta is null) return false;
+        if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
         _context.Contas.Remove(conta);
         _context.SaveChanges();
-        return true;
+        return Result.Ok();
     }
 
-    public ReadContaDto? Buscar(int id, string idUsuario, bool eAdmin)
+    public Result<ReadContaDto> Buscar(int id, string idUsuario, bool eAdmin)
     {
         Conta? conta;
         if (eAdmin)
@@ -80,7 +84,8 @@ public class ContaService : IContaService
         {
             conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
         }
-        if (conta is null) return null;
-        return _mapper.Map<ReadContaDto>(conta);
+        if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));;
+        var readDto = _mapper.Map<ReadContaDto>(conta);
+        return Result.Ok(readDto);
     }
 }
