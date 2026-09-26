@@ -1,5 +1,6 @@
 using Ledger.Data.LancamentoDtos;
 using Ledger.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ledger.Controllers;
@@ -16,6 +17,7 @@ public class LancamentoController : ControllerBase
         _lancamentoService = lancamentoService;
     }
     
+    [Authorize]
     [HttpPost]
     public IActionResult CriaLancamento([FromBody] CreateLancamentoDto dto)
     {
@@ -24,6 +26,7 @@ public class LancamentoController : ControllerBase
         return Ok(lancamento);
     }
 
+    [Authorize]
     [HttpGet]
     public IActionResult Listarlancamentos()
     {
@@ -31,6 +34,7 @@ public class LancamentoController : ControllerBase
         return Ok(lancamento);
     }
 
+    [Authorize]
     [HttpGet("{id}")]
     public IActionResult BuscarLancamentoPorId(int id)
     {
@@ -39,6 +43,7 @@ public class LancamentoController : ControllerBase
         return Ok(lancamento);
     }
     
+    [Authorize]
     [HttpGet("transacao/{id}")]
     public IActionResult BuscarParDeLancamentoPorIdTransacao(int id)
     {
@@ -47,6 +52,7 @@ public class LancamentoController : ControllerBase
         return Ok(lancamentos);
     }
 
+    [Authorize]
     [HttpPost("correcao")]
     public IActionResult CriarLancamentoDeCorrecao([FromBody] CreateLancamentoCorrecaoDto dto)
     {

@@ -16,17 +16,22 @@ public class ContaService : IContaService
         _mapper = mapper;
     }
 
-    public ReadContaDto Criar(CreateContaDto dto)
+    public ReadContaDto Criar(CreateContaDto dto,  string idUsuario)
     {
         var conta = _mapper.Map<Conta>(dto);
+        conta.IdUsuario = idUsuario;
         _context.Contas.Add(conta);
         _context.SaveChanges();
         return _mapper.Map<ReadContaDto>(conta);
     }
 
-    public List<ReadContaDto> Listar()
+    public List<ReadContaDto> Listar(string idUsuario, bool eAdmin)
     {
-        return _mapper.Map<List<ReadContaDto>>(_context.Contas.ToList());
+        if (eAdmin)
+        {
+            return _mapper.Map<List<ReadContaDto>>(_context.Contas.ToList());
+        }
+        return _mapper.Map<List<ReadContaDto>>(_context.Contas.Where(c => c.IdUsuario == idUsuario).ToList());
     }
 
     public bool Atualizar(UpdateContaDto dto, int id)

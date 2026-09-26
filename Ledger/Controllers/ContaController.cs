@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using Ledger.Data.ContaDtos;
 using Ledger.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ledger.Controllers;
@@ -15,20 +17,28 @@ public class ContaController : ControllerBase
         _contaService = contaService;
     }
     
+    [Authorize]
     [HttpPost]
     public IActionResult CriaConta([FromBody] CreateContaDto dto)
     {
-        var conta = _contaService.Criar(dto);
+        var idUsuario = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (idUsuario is null) return BadRequest();
+        var conta = _contaService.Criar(dto, idUsuario);
         return Ok(conta);    
     }
     
+    [Authorize]
     [HttpGet]
     public IActionResult ListarContas()
     {
-        var contas = _contaService.Listar();
+        bool eAdmin = false;
+        var idUsuario = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if(User.IsInRole("Admin")) eAdmin = true;
+        var contas = _contaService.Listar(idUsuario, eAdmin);
         return Ok(contas);
     }
 
+    [Authorize]
     [HttpPut("{numero}")]
     public IActionResult AtualizaConta([FromBody] UpdateContaDto dto,int numero)
     {
@@ -37,6 +47,7 @@ public class ContaController : ControllerBase
         return NoContent();
     }
 
+    [Authorize]
     [HttpDelete("{numero}")]
     public IActionResult ExcluirConta(int numero)
     {
@@ -45,6 +56,7 @@ public class ContaController : ControllerBase
         return NoContent();
     }
     
+    [Authorize]
     [HttpGet("{numero}")]
     public IActionResult BuscarContaPorNumero(int numero)
     {
