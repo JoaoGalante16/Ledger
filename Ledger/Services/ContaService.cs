@@ -2,87 +2,92 @@ using System.Runtime.InteropServices.JavaScript;
 using AutoMapper;
 using FluentResults;
 using Ledger.Data;
-using Ledger.Data.ContaDtos;
+using Ledger.Data.Dtos.ContaDtos;
+using Ledger.Data.UnitOfWork;
 using Ledger.Models;
 using Ledger.Results;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ledger.Services;
 
 public class ContaService : IContaService
 {
-    private readonly LedgerContext _context;
+    private readonly IUnitOfWork  _unitOfWork;
     private readonly IMapper _mapper;
 
-    public ContaService(LedgerContext context, IMapper mapper)
+    public ContaService(IUnitOfWork unitOfWork, IMapper mapper)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
 
-    public ReadContaDto Criar(CreateContaDto dto,  string idUsuario)
+    public async Task<ReadContaDto> Criar(CreateContaDto dto, string idUsuario)
     {
         var conta = _mapper.Map<Conta>(dto);
         conta.IdUsuario = idUsuario;
-        _context.Contas.Add(conta);
-        _context.SaveChanges();
+        await _unitOfWork.ContaRepository.Adicionar(conta);
+        await _unitOfWork.Commit();
         return _mapper.Map<ReadContaDto>(conta);
 
     }
 
-    public List<ReadContaDto> Listar(string idUsuario, bool eAdmin)
+    public async Task<List<ReadContaDto>> Listar(string idUsuario, bool eAdmin)
     {
-        if (eAdmin)
+        var query = await _unitOfWork.ContaRepository.BuscarTodos();
+        if (!eAdmin)
         {
-            return _mapper.Map<List<ReadContaDto>>(_context.Contas.ToList());
+            query = query.Where(c => c.IdUsuario == idUsuario);
         }
-        return _mapper.Map<List<ReadContaDto>>(_context.Contas.Where(c => c.IdUsuario == idUsuario).ToList());
+        var contas = await query.ToListAsync();
+        return _mapper.Map<List<ReadContaDto>>(contas);
     }
 
-    public Result Atualizar(UpdateContaDto dto, int id, string idUsuario, bool eAdmin)
+    public async Task<Result> Atualizar(UpdateContaDto dto, int id, string idUsuario, bool eAdmin)
     {
         Conta? conta;
         if (eAdmin)
         {
-            conta = _context.Contas.FirstOrDefault(c =>  c.Numero.Equals(id));
+            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero == id);
         }
         else
         {
-            conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
+            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
         }
         if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
         _mapper.Map(dto, conta);
-        _context.SaveChanges();
+        await _unitOfWork.ContaRepository.Atualizar(conta);
+        await _unitOfWork.Commit();
         return Result.Ok();
 
     }
 
-    public Result Remover(int id, string idUsuario, bool eAdmin)
+    public async Task<Result> Remover(int id, string idUsuario, bool eAdmin)
     {
         Conta? conta;
         if (eAdmin)
         {
-            conta = _context.Contas.FirstOrDefault(c=>c.Numero.Equals(id));
+            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c=>c.Numero.Equals(id));
         }
         else
         {
-            conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
+            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
         }
         if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
-        _context.Contas.Remove(conta);
-        _context.SaveChanges();
+        await _unitOfWork.ContaRepository.Deletar(conta);
+        await _unitOfWork.Commit();
         return Result.Ok();
     }
 
-    public Result<ReadContaDto> Buscar(int id, string idUsuario, bool eAdmin)
+    public async Task<Result<ReadContaDto>> Buscar(int id, string idUsuario, bool eAdmin)
     {
         Conta? conta;
         if (eAdmin)
         {
-            conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id));
+            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(id));
         }
         else
         {
-            conta = _context.Contas.FirstOrDefault(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
+            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
         }
         if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));;
         var readDto = _mapper.Map<ReadContaDto>(conta);

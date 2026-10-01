@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Ledger.Data.LancamentoDtos;
+namespace Ledger.Data.Dtos.LancamentoDtos;
 
 public class CreateLancamentoCorrecaoDto
 {

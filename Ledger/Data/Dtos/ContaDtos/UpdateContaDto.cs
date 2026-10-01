@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Ledger.Data.ContaDtos;
+namespace Ledger.Data.Dtos.ContaDtos;
 
 public class UpdateContaDto
 {

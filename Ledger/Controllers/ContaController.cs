@@ -1,4 +1,4 @@
-using Ledger.Data.ContaDtos;
+using Ledger.Data.Dtos.ContaDtos;
 using Ledger.Models;
 using Ledger.Results;
 using Ledger.Services;
@@ -21,25 +21,25 @@ public class ContaController : ControllerBase
     
     [Authorize]
     [HttpPost]
-    public IActionResult CriaConta([FromBody] CreateContaDto dto)
+    public async Task<IActionResult> CriaConta([FromBody] CreateContaDto dto)
     {
-        var conta = _contaService.Criar(dto, User.ObterId());
+        var conta = await _contaService.Criar(dto, User.ObterId());
         return Ok(conta);  
     }
     
     [Authorize]
     [HttpGet]
-    public IActionResult ListarContas()
+    public async Task<IActionResult> ListarContas()
     {
-        var contas = _contaService.Listar(User.ObterId(), User.EhAdmin());
+        var contas = await _contaService.Listar(User.ObterId(), User.EhAdmin());
         return Ok(contas);
     }
 
     [Authorize]
     [HttpPut("{numero}")]
-    public IActionResult AtualizaConta([FromBody] UpdateContaDto dto,int numero)
+    public async Task<IActionResult> AtualizaConta([FromBody] UpdateContaDto dto,int numero)
     {
-        var resultado = _contaService.Atualizar(dto, numero, User.ObterId(), User.EhAdmin());
+        var resultado = await _contaService.Atualizar(dto, numero, User.ObterId(), User.EhAdmin());
         if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
         if (resultado.IsFailed) return Problem();
         return NoContent();
@@ -47,9 +47,9 @@ public class ContaController : ControllerBase
 
     [Authorize]
     [HttpDelete("{numero}")]
-    public IActionResult ExcluirConta(int numero)
+    public async Task<IActionResult> ExcluirConta(int numero)
     {
-        var resultado = _contaService.Remover(numero,  User.ObterId(), User.EhAdmin());
+        var resultado = await _contaService.Remover(numero,  User.ObterId(), User.EhAdmin());
         if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
         if (resultado.IsFailed) return Problem();
         return NoContent();
@@ -57,9 +57,9 @@ public class ContaController : ControllerBase
     
     [Authorize]
     [HttpGet("{numero}")]
-    public IActionResult BuscarContaPorNumero(int numero)
+    public async Task<IActionResult> BuscarContaPorNumero(int numero)
     {
-        var resultado = _contaService.Buscar(numero, User.ObterId(), User.EhAdmin());
+        var resultado = await _contaService.Buscar(numero, User.ObterId(), User.EhAdmin());
         if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
         if (resultado.IsFailed) return Problem();
         return Ok(resultado.Value);

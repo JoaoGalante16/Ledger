@@ -1,5 +1,5 @@
 
-namespace Ledger.Data.LancamentoDtos;
+namespace Ledger.Data.Dtos.LancamentoDtos;
 
 public class ReadLancamentoDto
 {

@@ -1,7 +1,8 @@
 using AutoMapper;
 using FluentResults;
 using Ledger.Data;
-using Ledger.Data.LancamentoDtos;
+using Ledger.Data.Dtos.LancamentoDtos;
+using Ledger.Data.UnitOfWork;
 using Ledger.Models;
 using Ledger.Results;
 using Microsoft.EntityFrameworkCore;
@@ -11,33 +12,33 @@ namespace Ledger.Services;
 
 public class LancamentoService : ILancamentoService
 {
-    private readonly LedgerContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 
-    public LancamentoService(LedgerContext context, IMapper mapper)
+    public LancamentoService(IUnitOfWork unitOfWork, IMapper mapper)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
 
-    public Result<List<ReadLancamentoDto>> Criar(CreateLancamentoDto dto,  string idUsuario, bool eAdmin)
+    public async Task<Result<List<ReadLancamentoDto>>> Criar(CreateLancamentoDto dto, string idUsuario, bool eAdmin)
     {
         Conta? contaOrigem;
         if (eAdmin)
         {
-            contaOrigem = _context.Contas.FirstOrDefault(c => c.Numero.Equals(dto.NumeroContaOrigem));
+            contaOrigem = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(dto.NumeroContaOrigem));
         }
         else
         {
-            contaOrigem = _context.Contas.FirstOrDefault(c => c.Numero.Equals(dto.NumeroContaOrigem) && c.IdUsuario.Equals(idUsuario));
+            contaOrigem = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(dto.NumeroContaOrigem) && c.IdUsuario.Equals(idUsuario));
         }
-        var contaDestino = _context.Contas.FirstOrDefault(c => c.Numero.Equals(dto.NumeroContaDestino));
+        var contaDestino = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(dto.NumeroContaDestino));
         if (contaOrigem is null) return Result.Fail(new NaoEncontradoError("Conta de origem não encontrada"));
         if (contaDestino is null) return Result.Fail(new NaoEncontradoError("Conta de destino não encontrada"));
         
-        var idTransacao = _context.Database
+        var idTransacao = await _unitOfWork.Contexto.Database
             .SqlQuery<int>($"SELECT nextval('\"TransacaoIdSeq\"') as \"Value\"")
-            .First();
+            .FirstAsync();
 
         var lancamentoOrigem = _mapper.Map<Lancamento>(dto);
         lancamentoOrigem.IdTransacao = idTransacao;
@@ -50,55 +51,58 @@ public class LancamentoService : ILancamentoService
         lancamentoDestino.NumeroConta = dto.NumeroContaDestino;
         lancamentoDestino.DataGravacao = DateTime.UtcNow;
 
-        _context.Lancamentos.Add(lancamentoOrigem);
-        _context.Lancamentos.Add(lancamentoDestino);
-        _context.SaveChanges();
+        await _unitOfWork.LancamentoRepository.Adicionar(lancamentoOrigem);
+        await _unitOfWork.LancamentoRepository.Adicionar(lancamentoDestino);
+        await _unitOfWork.Commit();
 
         var listaReadDto = _mapper.Map<List<ReadLancamentoDto>>(new[] { lancamentoOrigem, lancamentoDestino });
         return Result.Ok(listaReadDto);
     }
 
-    public List<ReadLancamentoDto> Listar(string idUsuario, bool eAdmin)
+    public async Task<List<ReadLancamentoDto>> Listar(string idUsuario, bool eAdmin)
     {
-        if (eAdmin)
+        var query = (await _unitOfWork.LancamentoRepository.BuscarTodos());
+        if (!eAdmin)
         {
-            return _mapper.Map<List<ReadLancamentoDto>>(_context.Lancamentos.ToList());
+            query = query.Where(l => l.Conta.IdUsuario.Equals(idUsuario));
         }
-        return _mapper.Map<List<ReadLancamentoDto>>(_context.Lancamentos.Where(l => l.Conta.IdUsuario.Equals(idUsuario)));
+        var lancamentos = await query.ToListAsync();
+        return _mapper.Map<List<ReadLancamentoDto>>(lancamentos);
     }
 
-    public Result<ReadLancamentoDto> Buscar(int id, string idUsuario, bool eAdmin)
+    public async Task<Result<ReadLancamentoDto>> Buscar(int id, string idUsuario, bool eAdmin)
     {
         Lancamento? lancamento;
         if (eAdmin)
         {
-            lancamento = _context.Lancamentos.FirstOrDefault(l => l.Id.Equals(id));
+            lancamento = await _unitOfWork.LancamentoRepository.BuscarPorId(l => l.Id.Equals(id));
         }
         else
         {
-            lancamento = _context.Lancamentos.FirstOrDefault(l => l.Id.Equals(id) && l.Conta.IdUsuario.Equals(idUsuario));
+            lancamento = await _unitOfWork.LancamentoRepository.BuscarPorId(l => l.Id.Equals(id) && l.Conta.IdUsuario.Equals(idUsuario));
         }
         if (lancamento is null) return Result.Fail(new NaoEncontradoError("Lancamento não encontrado"));
         var readDto = _mapper.Map<ReadLancamentoDto>(lancamento);
         return Result.Ok(readDto);
     }
 
-    public Result<List<ReadLancamentoDto>> BuscarParDeLancamentos(int idTransacao)
+    public async Task<Result<List<ReadLancamentoDto>>> BuscarParDeLancamentos(int idTransacao)
     {
-        var parlancamento = _context.Lancamentos.Where(l => l.IdTransacao.Equals(idTransacao)).OrderBy(l => l.Valor).ToList();
-        if (parlancamento.Count != 2) return Result.Fail(new NaoEncontradoError("Par de lancamento não encontrado"));
-        var listaReadDto = _mapper.Map<List<ReadLancamentoDto>>(parlancamento);
+        var query = await _unitOfWork.LancamentoRepository.BuscarTodos();
+        var parLancamento = await query.Where(l => l.IdTransacao.Equals(idTransacao)).OrderBy(l => l.Valor).ToListAsync();
+        if (parLancamento.Count != 2) return Result.Fail(new NaoEncontradoError("Par de lancamento não encontrado"));
+        var listaReadDto = _mapper.Map<List<ReadLancamentoDto>>(parLancamento);
         return Result.Ok(listaReadDto);
     }
 
-    public Result<List<ReadLancamentoDto>> CriarLancamentoCorrecao(CreateLancamentoCorrecaoDto dto)
+    public async Task<Result<List<ReadLancamentoDto>>> CriarLancamentoCorrecao(CreateLancamentoCorrecaoDto dto)
     {
-        var parLancamentosReferencias = BuscarParDeLancamentos(dto.IdLancamentoReferencia);
+        var parLancamentosReferencias = await BuscarParDeLancamentos(dto.IdLancamentoReferencia);
         if (parLancamentosReferencias.IsFailed) return Result.Fail(new NaoEncontradoError("Lancamentos de referência não encontrado"));
         
-        var idTransacao = _context.Database
+        var idTransacao = await _unitOfWork.Contexto.Database
             .SqlQuery<int>($"SELECT nextval('\"TransacaoIdSeq\"') as \"Value\"")
-            .First();
+            .FirstAsync();
 
         var lancamentoOrigemCorrecao = _mapper.Map<Lancamento>(dto);
         lancamentoOrigemCorrecao.IdTransacao = idTransacao;
@@ -113,9 +117,9 @@ public class LancamentoService : ILancamentoService
         lancamentoDestinoCorrecao.Valor = -dto.Valor;
         lancamentoDestinoCorrecao.DataGravacao = DateTime.UtcNow;
 
-        _context.Lancamentos.Add(lancamentoOrigemCorrecao);
-        _context.Lancamentos.Add(lancamentoDestinoCorrecao);
-        _context.SaveChanges();
+        await _unitOfWork.LancamentoRepository.Adicionar(lancamentoOrigemCorrecao);
+        await _unitOfWork.LancamentoRepository.Adicionar(lancamentoDestinoCorrecao);
+        await _unitOfWork.Commit();
         
         var listaReadDto = _mapper.Map<List<ReadLancamentoDto>>(new[] {  lancamentoOrigemCorrecao, lancamentoDestinoCorrecao });
         return Result.Ok(listaReadDto);
