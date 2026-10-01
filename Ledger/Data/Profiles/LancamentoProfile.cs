@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Ledger.Data.LancamentoDtos;
+using Ledger.Data.Dtos.LancamentoDtos;
 using Ledger.Models;
 
 namespace Ledger.Data.Profiles;

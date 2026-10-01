@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Ledger.Data.LancamentoDtos;
+using Ledger.Data.Dtos.LancamentoDtos;
 using Ledger.Models;
 using Ledger.Results;
 using Ledger.Services;
@@ -21,9 +21,9 @@ public class LancamentoController : ControllerBase
     
     [Authorize]
     [HttpPost]
-    public IActionResult CriaLancamento([FromBody] CreateLancamentoDto dto)
+    public async Task<IActionResult> CriaLancamento([FromBody] CreateLancamentoDto dto)
     {
-        var resultado = _lancamentoService.Criar(dto, User.ObterId(), User.EhAdmin());
+        var resultado = await _lancamentoService.Criar(dto, User.ObterId(), User.EhAdmin());
         if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
         if (resultado.IsFailed) return Problem();
         return Ok(resultado.Value);
@@ -31,17 +31,17 @@ public class LancamentoController : ControllerBase
 
     [Authorize]
     [HttpGet]
-    public IActionResult Listarlancamentos()
+    public async Task<IActionResult> Listarlancamentos()
     {
-        var lancamento = _lancamentoService.Listar(User.ObterId(), User.EhAdmin());
+        var lancamento = await _lancamentoService.Listar(User.ObterId(), User.EhAdmin());
         return Ok(lancamento);
     }
 
     [Authorize]
     [HttpGet("{id}")]
-    public IActionResult BuscarLancamentoPorId(int id)
+    public async Task<IActionResult> BuscarLancamentoPorId(int id)
     {
-        var resultado = _lancamentoService.Buscar(id, User.ObterId(), User.EhAdmin());
+        var resultado = await _lancamentoService.Buscar(id, User.ObterId(), User.EhAdmin());
         if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
         if (resultado.IsFailed) return Problem();
         return Ok(resultado.Value);
@@ -49,9 +49,9 @@ public class LancamentoController : ControllerBase
     
     [Authorize(Roles = "Admin")]
     [HttpGet("transacao/{id}")]
-    public IActionResult BuscarParDeLancamentoPorIdTransacao(int id)
+    public async Task<IActionResult> BuscarParDeLancamentoPorIdTransacao(int id)
     {
-        var resultado = _lancamentoService.BuscarParDeLancamentos(id);
+        var resultado = await _lancamentoService.BuscarParDeLancamentos(id);
         if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
         if (resultado.IsFailed) return Problem();
         return Ok(resultado.Value);
@@ -59,9 +59,9 @@ public class LancamentoController : ControllerBase
 
     [Authorize(Roles = "Admin")]
     [HttpPost("correcao")]
-    public IActionResult CriarLancamentoDeCorrecao([FromBody] CreateLancamentoCorrecaoDto dto)
+    public async Task<IActionResult> CriarLancamentoDeCorrecao([FromBody] CreateLancamentoCorrecaoDto dto)
     {
-        var resultado = _lancamentoService.CriarLancamentoCorrecao(dto);
+        var resultado = await _lancamentoService.CriarLancamentoCorrecao(dto);
         if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
         if (resultado.IsFailed) return Problem();
         return Ok(resultado.Value);

@@ -1,6 +1,5 @@
 using Ledger.Data;
-using Ledger.Data.ContaDtos;
-using Ledger.Data.LancamentoDtos;
+using Ledger.Data.UnitOfWork;
 using Ledger.Models;
 using Ledger.Services;
 using Microsoft.AspNetCore.Identity;
@@ -23,6 +22,8 @@ builder.Services.AddIdentityApiEndpoints<Usuario>().AddRoles<IdentityRole>().Add
 builder.Services.AddAuthorization();
 
 builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IContaService,ContaService>();
 builder.Services.AddScoped<ILancamentoService, LancamentoService>();
