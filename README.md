@@ -9,8 +9,10 @@ API REST de livro-razão (ledger) em .NET 10 com contas, lançamentos em partida
 - **Lançamentos em partidas dobradas**: toda transação gera um par de lançamentos (débito na origem e crédito no destino) com o mesmo `IdTransacao`.
 - **Validação de saldo suficiente**: uma transferência é recusada com `400` se a conta de origem não tiver saldo para cobrir o valor, independente de quem está operando (regra vale também para `Admin`).
 - **Lançamentos de correção**: um novo par de lançamentos que referencia o original (`IdLancamentoReferencia`), sem editar nem apagar o histórico.
+- **Datas definidas pelo servidor**: o cliente não envia a data. `DataTransacao` e `DataGravacao` são preenchidas pela API no momento do registro.
+- **Validação de entrada** nos DTOs, com atributos próprios para CPF (dígitos verificadores) e para o limite de duas casas decimais no valor (ver [Regras de validação](#regras-de-validação)).
 - **Autenticação e autorização** com ASP.NET Core Identity (token Bearer) e duas visões de acesso: usuário comum e `Admin`.
-- Erros esperados tratados com **FluentResults** e traduzidos para códigos HTTP no controller.
+- **Tratamento de erros padronizado**: erros esperados usam FluentResults e são traduzidos para códigos HTTP num lugar só; exceções inesperadas são capturadas por um handler global. Toda resposta de erro segue o formato `ProblemDetails` (RFC 7807).
 
 ## Tecnologias
 
@@ -19,14 +21,16 @@ API REST de livro-razão (ledger) em .NET 10 com contas, lançamentos em partida
 - ASP.NET Core Identity (`IdentityDbContext<Usuario>`, endpoints de autenticação por Bearer token)
 - Repository + Unit of Work (`Repository<T>` genérico para `Conta`; `LancamentoRepository` próprio, sem `Atualizar`/`Deletar`, respeitando a regra de lançamento imutável)
 - AutoMapper (entidades e DTOs)
-- FluentResults (resultado de operações)
+- FluentResults (resultado de operações, com erros tipados)
+- `IExceptionHandler` + `ProblemDetails` para tratamento global de exceções
 - [Swashbuckle / Swagger UI](https://github.com/domaindrivendev/Swashbuckle.AspNetCore) para a documentação interativa da API, com autenticação Bearer configurada
 
 ## Estrutura
 
 ```
 Ledger/
-├── Controllers/        # ContaController, LancamentoController
+├── Controllers/        # ContaController, LancamentoController, ApiControllerBase
+├── Handlers/           # GlobalExceptionHandler (exceções inesperadas -> ProblemDetails 500)
 ├── Services/           # regras de negócio (IContaService, ILancamentoService)
 ├── Data/
 │   ├── Dtos/           # DTOs de Conta e Lancamento
@@ -37,6 +41,7 @@ Ledger/
 │   └── LedgerContext.cs
 ├── Models/             # entidades (Conta, Lancamento, Usuario) e extensões
 ├── Results/            # erros tipados do FluentResults
+├── Validation/         # atributos de validação (CpfAttribute, MaximoDuasCasasDecimaisAttribute)
 ├── Migrations/         # migrations do EF Core
 └── Program.cs          # configuração, Identity, Swagger e seed da role Admin
 ```
@@ -67,11 +72,35 @@ Todos os endpoints de `Conta` e `Lancamento` exigem autenticação (`Authorizati
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| POST | `/Lancamento` | Cria uma transferência (par de lançamentos) |
+| POST | `/Lancamento` | Cria uma transferência (par de lançamentos); a data é definida pelo servidor |
 | GET | `/Lancamento` | Lista os lançamentos |
 | GET | `/Lancamento/{id}` | Busca um lançamento pelo id |
 | GET | `/Lancamento/transacao/{id}` | Busca o par de uma transação (`Admin`) |
 | POST | `/Lancamento/correcao` | Cria um lançamento de correção (`Admin`) |
+
+## Regras de validação
+
+| Campo | Regra |
+| --- | --- |
+| `Conta.nome` | Obrigatório, até 250 caracteres |
+| `Conta.cpf` | Obrigatório, 11 dígitos numéricos (sem pontuação), com dígitos verificadores válidos e sem todos os dígitos iguais |
+| `Lancamento.numeroContaOrigem` / `numeroContaDestino` | Inteiros maiores que zero e diferentes entre si |
+| `Lancamento.valor` | Maior que zero e com no máximo duas casas decimais |
+| `Lancamento.descricao` | Opcional, até 250 caracteres |
+| `Correcao.idLancamentoReferencia` | Inteiro maior que zero |
+
+Além da validação dos campos, uma transferência é recusada quando a conta de origem não tem saldo suficiente.
+
+## Respostas de erro
+
+Todas as respostas de erro usam o formato `ProblemDetails` (RFC 7807):
+
+| Status | Quando acontece |
+| --- | --- |
+| `400` | Campo inválido (validação dos DTOs) ou saldo insuficiente na conta de origem |
+| `401` / `403` | Token ausente/inválido ou sem permissão para o recurso |
+| `404` | Conta ou lançamento não encontrado (inclui conta de outro usuário, para não revelar que ela existe) |
+| `500` | Erro inesperado: o detalhe fica só no log do servidor, a resposta é genérica |
 
 ## Como rodar
 
@@ -108,13 +137,13 @@ Na primeira vez, confia no certificado HTTPS de desenvolvimento (evita erro de "
 dotnet dev-certs https --trust
 ```
 
-Depois, sobe a API no profile `https` (precisa dele pro Swagger funcionar sem erro de rede — o profile `http` não abre porta HTTPS, e a API redireciona toda chamada pra HTTPS):
+Depois, sobe a API no profile `https`, que expõe a porta HTTPS usada pelo Swagger:
 
 ```bash
 dotnet run --project Ledger --launch-profile https
 ```
 
-A API sobe em `https://localhost:7251` (e também em `http://localhost:5106`, que redireciona pra HTTPS).
+A API sobe em `https://localhost:7251` (e também em `http://localhost:5106`).
 
 ### Documentação interativa (Swagger)
 

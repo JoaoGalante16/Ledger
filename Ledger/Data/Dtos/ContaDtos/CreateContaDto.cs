@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Ledger.Validation;
 
 namespace Ledger.Data.Dtos.ContaDtos;
 
@@ -8,6 +9,6 @@ public class CreateContaDto
     [StringLength(250, ErrorMessage = "O nome não pode ter mais de 250 caracteres")]
     public string Nome { get; set; }
     [Required(ErrorMessage = "O cpf da conta é obrigatório")]
-    [RegularExpression(@"^\d{11}$", ErrorMessage = "O cpf deve conter 11 dígitos numéricos")]
+    [Cpf]
     public string Cpf { get; set; }
 }

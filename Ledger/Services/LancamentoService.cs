@@ -49,11 +49,13 @@ public class LancamentoService : ILancamentoService
         lancamentoOrigem.IdTransacao = idTransacao;
         lancamentoOrigem.NumeroConta = dto.NumeroContaOrigem;
         lancamentoOrigem.Valor = -dto.Valor;
+        lancamentoOrigem.DataTransacao = DateTime.UtcNow;
         lancamentoOrigem.DataGravacao = DateTime.UtcNow;
 
         var lancamentoDestino = _mapper.Map<Lancamento>(dto);
         lancamentoDestino.IdTransacao = idTransacao;
         lancamentoDestino.NumeroConta = dto.NumeroContaDestino;
+        lancamentoDestino.DataTransacao = DateTime.UtcNow;
         lancamentoDestino.DataGravacao = DateTime.UtcNow;
 
         await _unitOfWork.LancamentoRepository.Adicionar(lancamentoOrigem);
@@ -113,6 +115,7 @@ public class LancamentoService : ILancamentoService
         lancamentoOrigemCorrecao.IdTransacao = idTransacao;
         lancamentoOrigemCorrecao.NumeroConta = parLancamentosReferencias.Value[0].NumeroConta;
         lancamentoOrigemCorrecao.IdLancamentoReferencia = parLancamentosReferencias.Value[0].Id;
+        lancamentoOrigemCorrecao.DataTransacao = DateTime.UtcNow;
         lancamentoOrigemCorrecao.DataGravacao = DateTime.UtcNow;
 
         var lancamentoDestinoCorrecao = _mapper.Map<Lancamento>(dto);
@@ -120,6 +123,7 @@ public class LancamentoService : ILancamentoService
         lancamentoDestinoCorrecao.NumeroConta = parLancamentosReferencias.Value[1].NumeroConta;
         lancamentoDestinoCorrecao.IdLancamentoReferencia = parLancamentosReferencias.Value[1].Id;
         lancamentoDestinoCorrecao.Valor = -dto.Valor;
+        lancamentoDestinoCorrecao.DataTransacao = DateTime.UtcNow;
         lancamentoDestinoCorrecao.DataGravacao = DateTime.UtcNow;
 
         await _unitOfWork.LancamentoRepository.Adicionar(lancamentoOrigemCorrecao);
