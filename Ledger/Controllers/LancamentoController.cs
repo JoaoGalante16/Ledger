@@ -25,6 +25,7 @@ public class LancamentoController : ControllerBase
     {
         var resultado = await _lancamentoService.Criar(dto, User.ObterId(), User.EhAdmin());
         if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
+        if (resultado.HasError<SaldoInsuficienteError>()) return BadRequest(resultado.Errors.First().Message);
         if (resultado.IsFailed) return Problem();
         return Ok(resultado.Value);
     }

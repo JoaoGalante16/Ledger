@@ -3,6 +3,7 @@ using AutoMapper;
 using FluentResults;
 using Ledger.Data;
 using Ledger.Data.Dtos.ContaDtos;
+using Ledger.Data.Dtos.LancamentoDtos;
 using Ledger.Data.UnitOfWork;
 using Ledger.Models;
 using Ledger.Results;
@@ -39,7 +40,20 @@ public class ContaService : IContaService
             query = query.Where(c => c.IdUsuario == idUsuario);
         }
         var contas = await query.ToListAsync();
-        return _mapper.Map<List<ReadContaDto>>(contas);
+
+        var numerosContas = contas.Select(c => c.Numero).ToList();
+        var queryLancamentos = await _unitOfWork.LancamentoRepository.BuscarTodos();
+        var saldos = queryLancamentos.Where(l => numerosContas.Contains(l.NumeroConta))
+            .GroupBy(l => l.NumeroConta)
+            .Select(g => new { NumeroConta = g.Key, Saldo = g.Sum(l => l.Valor) })
+            .ToDictionary(x => x.NumeroConta, x => x.Saldo);
+        
+        var readDto = _mapper.Map<List<ReadContaDto>>(contas);
+        foreach (var conta in readDto)
+        {
+            conta.Saldo = saldos.GetValueOrDefault(conta.Numero);
+        }
+        return readDto;
     }
 
     public async Task<Result> Atualizar(UpdateContaDto dto, int id, string idUsuario, bool eAdmin)
@@ -89,8 +103,11 @@ public class ContaService : IContaService
         {
             conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
         }
-        if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));;
+        if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        var query = await _unitOfWork.LancamentoRepository.BuscarTodos();
+        var saldo = await query.Where(l => l.NumeroConta == id).SumAsync(l => l.Valor);
         var readDto = _mapper.Map<ReadContaDto>(conta);
+        readDto.Saldo = saldo;
         return Result.Ok(readDto);
     }
 }
