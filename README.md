@@ -5,7 +5,9 @@ API REST de livro-razão (ledger) em .NET 10 com contas, lançamentos em partida
 ## Funcionalidades
 
 - Cadastro e gestão de **contas**, cada uma pertencente a um usuário.
+- **Saldo derivado**: nunca é uma coluna gravada, é sempre calculado como a soma dos lançamentos da conta (na busca individual e na listagem, sem N+1 — uma única consulta agrupada).
 - **Lançamentos em partidas dobradas**: toda transação gera um par de lançamentos (débito na origem e crédito no destino) com o mesmo `IdTransacao`.
+- **Validação de saldo suficiente**: uma transferência é recusada com `400` se a conta de origem não tiver saldo para cobrir o valor, independente de quem está operando (regra vale também para `Admin`).
 - **Lançamentos de correção**: um novo par de lançamentos que referencia o original (`IdLancamentoReferencia`), sem editar nem apagar o histórico.
 - **Autenticação e autorização** com ASP.NET Core Identity (token Bearer) e duas visões de acesso: usuário comum e `Admin`.
 - Erros esperados tratados com **FluentResults** e traduzidos para códigos HTTP no controller.
@@ -15,22 +17,28 @@ API REST de livro-razão (ledger) em .NET 10 com contas, lançamentos em partida
 - .NET 10 / ASP.NET Core (Controllers)
 - Entity Framework Core 10 com PostgreSQL (Npgsql)
 - ASP.NET Core Identity (`IdentityDbContext<Usuario>`, endpoints de autenticação por Bearer token)
+- Repository + Unit of Work (`Repository<T>` genérico para `Conta`; `LancamentoRepository` próprio, sem `Atualizar`/`Deletar`, respeitando a regra de lançamento imutável)
 - AutoMapper (entidades e DTOs)
 - FluentResults (resultado de operações)
-- OpenAPI nativo do .NET
-- [Scalar](https://scalar.com) para a documentação interativa da API
+- [Swashbuckle / Swagger UI](https://github.com/domaindrivendev/Swashbuckle.AspNetCore) para a documentação interativa da API, com autenticação Bearer configurada
 
 ## Estrutura
 
 ```
 Ledger/
-├── Controllers/     # ContaController, LancamentoController
-├── Services/        # regras de negócio (IContaService, ILancamentoService)
-├── Data/            # LedgerContext, DTOs e profiles do AutoMapper
-├── Models/          # entidades (Conta, Lancamento, Usuario) e extensões
-├── Results/         # erros tipados do FluentResults
-├── Migrations/      # migrations do EF Core
-└── Program.cs       # configuração, Identity e seed da role Admin
+├── Controllers/        # ContaController, LancamentoController
+├── Services/           # regras de negócio (IContaService, ILancamentoService)
+├── Data/
+│   ├── Dtos/           # DTOs de Conta e Lancamento
+│   ├── Profiles/       # profiles do AutoMapper
+│   ├── Repositories/   # Repository<T>, ContaRepository, LancamentoRepository
+│   │   └── Interfaces/
+│   ├── UnitOfWork/     # IUnitOfWork / UnitOfWork
+│   └── LedgerContext.cs
+├── Models/             # entidades (Conta, Lancamento, Usuario) e extensões
+├── Results/            # erros tipados do FluentResults
+├── Migrations/         # migrations do EF Core
+└── Program.cs          # configuração, Identity, Swagger e seed da role Admin
 ```
 
 ## Endpoints
@@ -50,8 +58,8 @@ Todos os endpoints de `Conta` e `Lancamento` exigem autenticação (`Authorizati
 | Método | Rota | Descrição |
 | --- | --- | --- |
 | POST | `/Conta` | Cria uma conta para o usuário logado |
-| GET | `/Conta` | Lista as contas (todas, se `Admin`) |
-| GET | `/Conta/{numero}` | Busca uma conta pelo número |
+| GET | `/Conta` | Lista as contas com saldo (todas, se `Admin`) |
+| GET | `/Conta/{numero}` | Busca uma conta pelo número, com saldo |
 | PUT | `/Conta/{numero}` | Atualiza o nome da conta |
 | DELETE | `/Conta/{numero}` | Exclui uma conta |
 
@@ -94,22 +102,30 @@ dotnet ef database update --project Ledger
 
 ### Execução
 
+Na primeira vez, confia no certificado HTTPS de desenvolvimento (evita erro de "Failed to fetch" no Swagger):
+
 ```bash
-dotnet run --project Ledger --launch-profile http
+dotnet dev-certs https --trust
 ```
 
-A API sobe em `http://localhost:5106`.
+Depois, sobe a API no profile `https` (precisa dele pro Swagger funcionar sem erro de rede — o profile `http` não abre porta HTTPS, e a API redireciona toda chamada pra HTTPS):
 
-### Documentação interativa (Scalar)
+```bash
+dotnet run --project Ledger --launch-profile https
+```
 
-No ambiente de desenvolvimento a API expõe a documentação com o [Scalar](https://scalar.com), onde é possível ler e testar todos os endpoints pelo navegador:
+A API sobe em `https://localhost:7251` (e também em `http://localhost:5106`, que redireciona pra HTTPS).
 
-- Interface: `http://localhost:5106/scalar/v1`
-- Documento OpenAPI (JSON): `http://localhost:5106/openapi/v1.json`
+### Documentação interativa (Swagger)
+
+No ambiente de desenvolvimento a API expõe a documentação com Swagger UI, onde é possível ler e testar todos os endpoints pelo navegador:
+
+- Interface: `https://localhost:7251/swagger`
+- Documento OpenAPI (JSON): `https://localhost:7251/swagger/v1/swagger.json`
 
 ### Primeiro uso
 
 1. `POST /auth/register` com e-mail e senha.
 2. `POST /auth/login` e copie o `accessToken` da resposta.
-3. Envie o token no header `Authorization: Bearer <accessToken>` nas demais requisições.
+3. No Swagger, clique em **Authorize** (canto superior direito) e cole só o token, sem o prefixo `Bearer` — o esquema já adiciona sozinho. Em outro cliente (Postman, etc.), envie no header `Authorization: Bearer <accessToken>`.
 4. Para virar `Admin`, registre o e-mail configurado em `AdminEmail`, reinicie a API (o seed roda na inicialização) e faça login de novo, pois a role entra no token no momento do login.
