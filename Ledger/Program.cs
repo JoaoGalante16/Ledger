@@ -1,5 +1,6 @@
 using Ledger.Data;
 using Ledger.Data.UnitOfWork;
+using Ledger.Handlers;
 using Ledger.Models;
 using Ledger.Services;
 using Microsoft.AspNetCore.Identity;
@@ -50,10 +51,16 @@ builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddScoped<IContaService,ContaService>();
 builder.Services.AddScoped<ILancamentoService, LancamentoService>();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 using (var scope = app.Services.CreateScope())
 {

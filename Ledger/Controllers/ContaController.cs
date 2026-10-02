@@ -10,7 +10,7 @@ namespace Ledger.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ContaController : ControllerBase
+public class ContaController : ApiControllerBase
 {
     private readonly IContaService _contaService;
 
@@ -40,8 +40,7 @@ public class ContaController : ControllerBase
     public async Task<IActionResult> AtualizaConta([FromBody] UpdateContaDto dto,int numero)
     {
         var resultado = await _contaService.Atualizar(dto, numero, User.ObterId(), User.EhAdmin());
-        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
-        if (resultado.IsFailed) return Problem();
+        if (resultado.IsFailed) return ProblemaDe(resultado);
         return NoContent();
     }
 
@@ -50,8 +49,7 @@ public class ContaController : ControllerBase
     public async Task<IActionResult> ExcluirConta(int numero)
     {
         var resultado = await _contaService.Remover(numero,  User.ObterId(), User.EhAdmin());
-        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
-        if (resultado.IsFailed) return Problem();
+        if (resultado.IsFailed) return ProblemaDe(resultado);
         return NoContent();
     }
     
@@ -60,8 +58,7 @@ public class ContaController : ControllerBase
     public async Task<IActionResult> BuscarContaPorNumero(int numero)
     {
         var resultado = await _contaService.Buscar(numero, User.ObterId(), User.EhAdmin());
-        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
-        if (resultado.IsFailed) return Problem();
+        if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
 }
