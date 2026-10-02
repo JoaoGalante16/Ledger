@@ -10,7 +10,7 @@ namespace Ledger.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class LancamentoController : ControllerBase
+public class LancamentoController : ApiControllerBase
 {
     private readonly ILancamentoService _lancamentoService;
     
@@ -24,8 +24,7 @@ public class LancamentoController : ControllerBase
     public async Task<IActionResult> CriaLancamento([FromBody] CreateLancamentoDto dto)
     {
         var resultado = await _lancamentoService.Criar(dto, User.ObterId(), User.EhAdmin());
-        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
-        if (resultado.IsFailed) return Problem();
+        if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
 
@@ -42,8 +41,7 @@ public class LancamentoController : ControllerBase
     public async Task<IActionResult> BuscarLancamentoPorId(int id)
     {
         var resultado = await _lancamentoService.Buscar(id, User.ObterId(), User.EhAdmin());
-        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
-        if (resultado.IsFailed) return Problem();
+        if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
     
@@ -52,8 +50,7 @@ public class LancamentoController : ControllerBase
     public async Task<IActionResult> BuscarParDeLancamentoPorIdTransacao(int id)
     {
         var resultado = await _lancamentoService.BuscarParDeLancamentos(id);
-        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
-        if (resultado.IsFailed) return Problem();
+        if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
 
@@ -62,8 +59,7 @@ public class LancamentoController : ControllerBase
     public async Task<IActionResult> CriarLancamentoDeCorrecao([FromBody] CreateLancamentoCorrecaoDto dto)
     {
         var resultado = await _lancamentoService.CriarLancamentoCorrecao(dto);
-        if (resultado.HasError<NaoEncontradoError>()) return NotFound(resultado.Errors.First().Message);
-        if (resultado.IsFailed) return Problem();
+        if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
 }
