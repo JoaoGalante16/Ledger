@@ -35,6 +35,11 @@ public class LancamentoService : ILancamentoService
         var contaDestino = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(dto.NumeroContaDestino));
         if (contaOrigem is null) return Result.Fail(new NaoEncontradoError("Conta de origem não encontrada"));
         if (contaDestino is null) return Result.Fail(new NaoEncontradoError("Conta de destino não encontrada"));
+
+        var query = await _unitOfWork.LancamentoRepository.BuscarTodos();
+        var saldoDisponivel = await query.Where(l => l.NumeroConta == contaOrigem.Numero).SumAsync(l => l.Valor);
+        
+        if(saldoDisponivel <  dto.Valor) return Result.Fail(new SaldoInsuficienteError("Saldo insuficiente"));
         
         var idTransacao = await _unitOfWork.Contexto.Database
             .SqlQuery<int>($"SELECT nextval('\"TransacaoIdSeq\"') as \"Value\"")
