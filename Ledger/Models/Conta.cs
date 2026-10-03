@@ -14,5 +14,6 @@ public class Conta
     [ForeignKey("Usuario")]
     public string IdUsuario { get; set; }
     public virtual Usuario Usuario { get; set; }
+    public DateTime? DataEncerramento { get; set; }
 
 }

@@ -10,4 +10,5 @@ public interface IContaService
    Task<Result> Atualizar(UpdateContaDto dto, int id, string idUsuario, bool eAdmin);
    Task<Result> Remover(int id, string idUsuario, bool eAdmin);
    Task<Result<ReadContaDto>> Buscar(int id, string idUsuario, bool eAdmin);
+   Task<Result> Encerrar(int id, string idUsuario, bool eAdmin);
 }
