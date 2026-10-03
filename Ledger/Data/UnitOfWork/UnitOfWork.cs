@@ -5,6 +5,8 @@ namespace Ledger.Data.UnitOfWork;
 
 public class UnitOfWork : IUnitOfWork
 {
+    private readonly LedgerContext _context;
+    
     private ContaRepository _contaRepository;
     private LancamentoRepository _lancamentoRepository;
 
@@ -14,7 +16,7 @@ public class UnitOfWork : IUnitOfWork
         {
             if (_contaRepository == null)
             {
-                _contaRepository = new ContaRepository(Contexto);
+                _contaRepository = new ContaRepository(_context);
             }
 
             return _contaRepository;
@@ -27,22 +29,20 @@ public class UnitOfWork : IUnitOfWork
         {
             if (_lancamentoRepository == null)
             {
-                _lancamentoRepository = new LancamentoRepository(Contexto);
+                _lancamentoRepository = new LancamentoRepository(_context);
             }
 
             return _lancamentoRepository;
         }
     }
-
-    public LedgerContext Contexto { get; }
-
+    
     public UnitOfWork(LedgerContext context)
     {
-        Contexto = context;
+        _context = context;
     }
     
     public async Task Commit()
     {
-        await Contexto.SaveChangesAsync();
+        await _context.SaveChangesAsync();
     }
 }

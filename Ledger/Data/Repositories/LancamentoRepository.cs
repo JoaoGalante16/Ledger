@@ -28,4 +28,11 @@ public class LancamentoRepository : ILancamentoRepository
     {
         await _context.Lancamentos.AddAsync(lancamento);
     }
+
+    public async Task<int> ProximoIdTransacao()
+    {
+        return await _context.Database
+            .SqlQuery<int>($"SELECT nextval('\"TransacaoIdSeq\"') as \"Value\"")
+            .FirstAsync();
+    }
 }
