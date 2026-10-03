@@ -3,6 +3,7 @@ using System;
 using Ledger.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ledger.Migrations
 {
     [DbContext(typeof(LedgerContext))]
-    partial class LedgerContextModelSnapshot : ModelSnapshot
+    [Migration("20261003175810_AdicionaDataEncerramentoConta")]
+    partial class AdicionaDataEncerramentoConta
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

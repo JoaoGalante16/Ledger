@@ -71,6 +71,12 @@ public class ContaService : IContaService
     {
         var conta = await BuscarContaAcessivel(id, idUsuario, eAdmin);
         if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+
+        var querry = await _unitOfWork.LancamentoRepository.BuscarTodos();
+        var temLancamento = await querry.AnyAsync(l => l.NumeroConta == id);
+        if (temLancamento)
+            return Result.Fail(new ConflitoError("A conta tem lançamentos registrados, use a opção de desativar"));
+        
         await _unitOfWork.ContaRepository.Deletar(conta);
         await _unitOfWork.Commit();
         return Result.Ok();

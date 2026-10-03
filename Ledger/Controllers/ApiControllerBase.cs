@@ -14,6 +14,8 @@ public abstract class ApiControllerBase : ControllerBase
             return Problem(detail: detalhe, statusCode: StatusCodes.Status404NotFound);
         if (resultado.HasError<SaldoInsuficienteError>())
             return Problem(detail: detalhe, statusCode: StatusCodes.Status400BadRequest);
+        if (resultado.HasError<ConflitoError>())
+            return Problem(detail: detalhe, statusCode: StatusCodes.Status409Conflict);
 
         return Problem();
     }
