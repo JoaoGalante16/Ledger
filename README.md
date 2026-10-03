@@ -5,6 +5,7 @@ API REST de livro-razão (ledger) em .NET 10 com contas, lançamentos em partida
 ## Funcionalidades
 
 - Cadastro e gestão de **contas**, cada uma pertencente a um usuário.
+- **Encerramento de contas**: uma conta com histórico nunca é apagada, é **encerrada** (`DataEncerramento` preenchida). O encerramento exige saldo zero, e uma conta encerrada não envia nem recebe lançamentos (nem de correção). A exclusão de verdade só é permitida para contas sem nenhum lançamento.
 - **Saldo derivado**: nunca é uma coluna gravada, é sempre calculado como a soma dos lançamentos da conta (na busca individual e na listagem, sem N+1 — uma única consulta agrupada).
 - **Lançamentos em partidas dobradas**: toda transação gera um par de lançamentos (débito na origem e crédito no destino) com o mesmo `IdTransacao`.
 - **Validação de saldo suficiente**: uma transferência é recusada com `400` se a conta de origem não tiver saldo para cobrir o valor, independente de quem está operando (regra vale também para `Admin`).
@@ -63,10 +64,11 @@ Todos os endpoints de `Conta` e `Lancamento` exigem autenticação (`Authorizati
 | Método | Rota | Descrição |
 | --- | --- | --- |
 | POST | `/Conta` | Cria uma conta para o usuário logado |
-| GET | `/Conta` | Lista as contas com saldo (todas, se `Admin`) |
-| GET | `/Conta/{numero}` | Busca uma conta pelo número, com saldo |
+| GET | `/Conta` | Lista as contas com saldo e `dataEncerramento` (todas, se `Admin`) |
+| GET | `/Conta/{numero}` | Busca uma conta pelo número, com saldo e `dataEncerramento` |
 | PUT | `/Conta/{numero}` | Atualiza o nome da conta |
-| DELETE | `/Conta/{numero}` | Exclui uma conta |
+| POST | `/Conta/{numero}/encerrar` | Encerra a conta (exige saldo zero e conta ainda ativa) |
+| DELETE | `/Conta/{numero}` | Exclui a conta, **somente se ela não tiver lançamentos** (senão `409`: use o encerramento) |
 
 ### Lançamentos
 
@@ -89,7 +91,11 @@ Todos os endpoints de `Conta` e `Lancamento` exigem autenticação (`Authorizati
 | `Lancamento.descricao` | Opcional, até 250 caracteres |
 | `Correcao.idLancamentoReferencia` | Inteiro maior que zero |
 
-Além da validação dos campos, uma transferência é recusada quando a conta de origem não tem saldo suficiente.
+Além da validação dos campos, valem estas regras de negócio nas transferências e nas contas:
+- A transferência é recusada (`400`) quando a conta de origem não tem saldo suficiente.
+- A transferência e o lançamento de correção são recusados (`409`) quando alguma das contas envolvidas está encerrada.
+- O encerramento é recusado (`409`) quando a conta já está encerrada ou quando o saldo não é zero.
+- Uma conta encerrada não é reaberta: não existe operação de reabertura por enquanto.
 
 ## Respostas de erro
 
@@ -100,6 +106,7 @@ Todas as respostas de erro usam o formato `ProblemDetails` (RFC 7807):
 | `400` | Campo inválido (validação dos DTOs) ou saldo insuficiente na conta de origem |
 | `401` / `403` | Token ausente/inválido ou sem permissão para o recurso |
 | `404` | Conta ou lançamento não encontrado (inclui conta de outro usuário, para não revelar que ela existe) |
+| `409` | Conflito com o estado atual: conta com lançamentos que não pode ser excluída, conta já encerrada, encerramento com saldo diferente de zero, ou movimentação envolvendo conta encerrada |
 | `500` | Erro inesperado: o detalhe fica só no log do servidor, a resposta é genérica |
 
 ## Como rodar

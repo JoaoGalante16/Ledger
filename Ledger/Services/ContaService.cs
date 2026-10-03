@@ -85,17 +85,39 @@ public class ContaService : IContaService
     public async Task<Result<ReadContaDto>> Buscar(int id, string idUsuario, bool eAdmin)
     {
         var conta = await BuscarContaAcessivel(id, idUsuario, eAdmin);
-        if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
-        var query = await _unitOfWork.LancamentoRepository.BuscarTodos();
-        var saldo = await query.Where(l => l.NumeroConta == id).SumAsync(l => l.Valor);
+        if (conta is null) 
+            return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        var saldo = await BuscarSaldo(id);
         var readDto = _mapper.Map<ReadContaDto>(conta);
         readDto.Saldo = saldo;
         return Result.Ok(readDto);
     }
-    
+
+    public async Task<Result> Encerrar(int id, string idUsuario, bool eAdmin)
+    {
+        var conta = await BuscarContaAcessivel(id, idUsuario, eAdmin);
+        if (conta is null) 
+            return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        if (conta.DataEncerramento is not null)
+            return Result.Fail(new ConflitoError("A conta já está encerrada"));
+        var saldo = await BuscarSaldo(id);
+        if (saldo != 0) return Result.Fail(new ConflitoError("O saldo precisa ser zero para encerrar a conta"));
+
+        conta.DataEncerramento = DateTime.UtcNow;
+        await _unitOfWork.Commit();
+        return Result.Ok();
+    }
+
     private Task<Conta?> BuscarContaAcessivel(int id, string idUsuario, bool eAdmin)
     {
         return _unitOfWork.ContaRepository.BuscarPorPk(c =>
             c.Numero == id && (eAdmin || c.IdUsuario == idUsuario));
+    }
+
+    private async Task<decimal> BuscarSaldo(int id)
+    {
+        var query = await _unitOfWork.LancamentoRepository.BuscarTodos();
+        var saldo = await query.Where(l => l.NumeroConta == id).SumAsync(l => l.Valor);
+        return saldo;
     }
 }

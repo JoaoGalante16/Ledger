@@ -61,4 +61,13 @@ public class ContaController : ApiControllerBase
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
+
+    [Authorize]
+    [HttpPost("{numero}/encerrar")]
+    public async Task<IActionResult> EncerrarConta(int numero)
+    {
+        var resultado = await _contaService.Encerrar(numero, User.ObterId(), User.EhAdmin());
+        if (resultado.IsFailed) return ProblemaDe(resultado);
+        return NoContent();
+    }
 }

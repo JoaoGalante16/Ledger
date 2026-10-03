@@ -5,7 +5,7 @@ namespace Ledger.Results;
 
 public class ConflitoError : Error
 {
-    public ConflitoError(string message) : base(message)
+    public ConflitoError(string mensagem) : base(mensagem)
     {
     }
 }

@@ -4,7 +4,7 @@ namespace Ledger.Results;
 
 public class SaldoInsuficienteError : Error
 {
-    public SaldoInsuficienteError(string mensage) : base(mensage)
+    public SaldoInsuficienteError(string mensagem) : base(mensagem)
     {
         
     }

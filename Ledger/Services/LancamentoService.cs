@@ -28,10 +28,13 @@ public class LancamentoService : ILancamentoService
         if (contaOrigem is null) return Result.Fail(new NaoEncontradoError("Conta de origem não encontrada"));
         if (contaDestino is null) return Result.Fail(new NaoEncontradoError("Conta de destino não encontrada"));
 
-        var query = await _unitOfWork.LancamentoRepository.BuscarTodos();
-        var saldoDisponivel = await query.Where(l => l.NumeroConta == contaOrigem.Numero).SumAsync(l => l.Valor);
+        if (contaOrigem.DataEncerramento is not null)
+            return Result.Fail(new ConflitoError("A conta de origem foi encerrada"));
+        if (contaDestino.DataEncerramento is not null)
+            return Result.Fail(new ConflitoError("A conta de destino foi encerrada"));
         
-        if(saldoDisponivel <  dto.Valor) return Result.Fail(new SaldoInsuficienteError("Saldo insuficiente"));
+        var saldo = await BuscarSaldo(dto.NumeroContaOrigem);
+        if(saldo <  dto.Valor) return Result.Fail(new SaldoInsuficienteError("Saldo insuficiente"));
 
         var idTransacao = await _unitOfWork.LancamentoRepository.ProximoIdTransacao();
 
@@ -89,6 +92,14 @@ public class LancamentoService : ILancamentoService
         var parLancamentosReferencias = await BuscarParDeLancamentos(dto.IdLancamentoReferencia);
         if (parLancamentosReferencias.IsFailed) return Result.Fail(new NaoEncontradoError("Lancamentos de referência não encontrado"));
 
+        var contaOrigem = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero == parLancamentosReferencias.Value[0].NumeroConta);
+        var contaDestino = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero == parLancamentosReferencias.Value[1].NumeroConta);
+        
+        if (contaOrigem.DataEncerramento is not null)
+            return Result.Fail(new ConflitoError("A conta de origem foi encerrada"));
+        if (contaDestino.DataEncerramento is not null)
+            return Result.Fail(new ConflitoError("A conta de destino foi encerrada"));
+
         var idTransacao = await _unitOfWork.LancamentoRepository.ProximoIdTransacao();
 
         var lancamentoOrigemCorrecao = _mapper.Map<Lancamento>(dto);
@@ -118,5 +129,12 @@ public class LancamentoService : ILancamentoService
     {
         return _unitOfWork.LancamentoRepository.BuscarPorId(l =>
             l.Id == id && (eAdmin || l.Conta.IdUsuario == idUsuario));
+    }
+    
+    private async Task<decimal> BuscarSaldo(int id)
+    {
+        var query = await _unitOfWork.LancamentoRepository.BuscarTodos();
+        var saldo = await query.Where(l => l.NumeroConta == id).SumAsync(l => l.Valor);
+        return saldo;
     }
 }
