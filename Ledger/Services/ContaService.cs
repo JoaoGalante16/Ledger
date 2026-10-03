@@ -58,15 +58,7 @@ public class ContaService : IContaService
 
     public async Task<Result> Atualizar(UpdateContaDto dto, int id, string idUsuario, bool eAdmin)
     {
-        Conta? conta;
-        if (eAdmin)
-        {
-            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero == id);
-        }
-        else
-        {
-            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
-        }
+        var conta = await BuscarContaAcessivel(id, idUsuario, eAdmin);
         if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
         _mapper.Map(dto, conta);
         await _unitOfWork.ContaRepository.Atualizar(conta);
@@ -77,15 +69,7 @@ public class ContaService : IContaService
 
     public async Task<Result> Remover(int id, string idUsuario, bool eAdmin)
     {
-        Conta? conta;
-        if (eAdmin)
-        {
-            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c=>c.Numero.Equals(id));
-        }
-        else
-        {
-            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
-        }
+        var conta = await BuscarContaAcessivel(id, idUsuario, eAdmin);
         if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
         await _unitOfWork.ContaRepository.Deletar(conta);
         await _unitOfWork.Commit();
@@ -94,20 +78,18 @@ public class ContaService : IContaService
 
     public async Task<Result<ReadContaDto>> Buscar(int id, string idUsuario, bool eAdmin)
     {
-        Conta? conta;
-        if (eAdmin)
-        {
-            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(id));
-        }
-        else
-        {
-            conta = await _unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero.Equals(id) && c.IdUsuario == idUsuario);
-        }
+        var conta = await BuscarContaAcessivel(id, idUsuario, eAdmin);
         if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
         var query = await _unitOfWork.LancamentoRepository.BuscarTodos();
         var saldo = await query.Where(l => l.NumeroConta == id).SumAsync(l => l.Valor);
         var readDto = _mapper.Map<ReadContaDto>(conta);
         readDto.Saldo = saldo;
         return Result.Ok(readDto);
+    }
+    
+    private Task<Conta?> BuscarContaAcessivel(int id, string idUsuario, bool eAdmin)
+    {
+        return _unitOfWork.ContaRepository.BuscarPorPk(c =>
+            c.Numero == id && (eAdmin || c.IdUsuario == idUsuario));
     }
 }

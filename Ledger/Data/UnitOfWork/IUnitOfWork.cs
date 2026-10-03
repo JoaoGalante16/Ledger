@@ -6,8 +6,6 @@ public interface IUnitOfWork
 {
     IContaRepository ContaRepository { get; }
     ILancamentoRepository LancamentoRepository { get; }
-    
-    LedgerContext Contexto { get;}
 
     Task Commit();
 }

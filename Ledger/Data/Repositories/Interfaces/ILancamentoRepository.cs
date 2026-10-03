@@ -8,4 +8,5 @@ public interface ILancamentoRepository
     Task<IQueryable<Lancamento>> BuscarTodos();
     Task<Lancamento?> BuscarPorId(Expression<Func<Lancamento, bool>> predicate);
     Task Adicionar(Lancamento lancamento);
+    Task<int> ProximoIdTransacao();
 }
