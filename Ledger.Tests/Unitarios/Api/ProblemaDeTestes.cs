@@ -19,6 +19,8 @@ public class ProblemaDeTestes
         return Assert.IsType<ProblemDetails>(resposta.Value);
     }
 
+    // ---- Erros conhecidos ----
+
     [Fact]
     public void NaoEncontradoViraStatus404()
     {
@@ -45,6 +47,8 @@ public class ProblemaDeTestes
         Assert.Equal(409, status);
         Assert.Equal("A conta já está encerrada", problema.Detail);
     }
+
+    // ---- Erro desconhecido ----
 
     [Fact]
     public void ErroDesconhecidoViraStatus500SemExporAMensagem()

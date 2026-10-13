@@ -46,12 +46,12 @@ public class ContaServiceTestes
     {
         var corrente = _cenario.NovaConta(1);
         var poupanca = _cenario.NovaConta(2);
-        _cenario.NovaConta(3); // sem nenhum lançamento
-        var deOutro = _cenario.NovaConta(4, CenarioDeServico.IdOutroUsuario);
+        _cenario.NovaConta(3);
+        var contaDeOutroUsuario = _cenario.NovaConta(4, CenarioDeServico.IdOutroUsuario);
         _cenario.NovoLancamento(corrente, 100m);
         _cenario.NovoLancamento(corrente, -30.25m);
         _cenario.NovoLancamento(poupanca, 50m);
-        _cenario.NovoLancamento(deOutro, 1000m);
+        _cenario.NovoLancamento(contaDeOutroUsuario, 1000m);
 
         var contas = await _service.Listar(CenarioDeServico.IdDono, eAdmin: false);
 

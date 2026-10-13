@@ -25,6 +25,8 @@ public class LancamentoServiceCorrecao
         IdLancamentoReferencia = IdTransacaoOriginal
     };
 
+    // ---- Caminho feliz ----
+
     [Fact]
     public async Task GravaParComSinaisInvertidosApontandoParaAsLinhasOriginais()
     {

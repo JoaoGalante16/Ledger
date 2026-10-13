@@ -8,16 +8,18 @@ namespace Ledger.Tests.Unitarios.Api;
 
 public class GlobalExceptionHandlerTestes
 {
+    // ---- Exceção não tratada ----
+
     [Fact]
     public async Task DevolveProblemDetails500SemAMensagemDaExcecao()
     {
+        //monta requisicao e excecao falsa
         var handler = new GlobalExceptionHandler(NullLogger<GlobalExceptionHandler>.Instance);
         var contexto = new DefaultHttpContext();
         contexto.Response.Body = new MemoryStream();
         var excecao = new InvalidOperationException("senha do banco: 123456");
         
         var tratou = await handler.TryHandleAsync(contexto, excecao, CancellationToken.None);
-
         
         Assert.True(tratou);
         Assert.Equal(StatusCodes.Status500InternalServerError, contexto.Response.StatusCode);

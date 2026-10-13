@@ -5,8 +5,12 @@ namespace Ledger.Tests.Unitarios.Api;
 
 public class UserExtensionsTestes
 {
+    
+    //monta o user na mao podendo passar as claims
     private static ClaimsPrincipal Usuario(params Claim[] claims) =>
         new(new ClaimsIdentity(claims, authenticationType: "Teste"));
+
+    // ---- ObterId ----
 
     [Fact]
     public void ObterIdDevolveAClaimNameIdentifier()
@@ -23,6 +27,8 @@ public class UserExtensionsTestes
 
         Assert.Throws<InvalidOperationException>(() => usuario.ObterId());
     }
+
+    // ---- EhAdmin ----
 
     [Fact]
     public void EhAdminVerdadeiroComARoleAdmin()

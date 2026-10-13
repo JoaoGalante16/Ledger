@@ -4,6 +4,7 @@ namespace Ledger.Tests.Unitarios.Suporte;
 
 public static class Validador
 {
+    // validacao que a Api faz antes de chegar no controller
     public static List<ValidationResult> Validar(object objeto)
     {
         var resultados = new List<ValidationResult>();
@@ -11,6 +12,7 @@ public static class Validador
         return resultados;
     }
 
+    //validacao feita por propriedade
     public static bool TemErroEm(object objeto, string propriedade)
     {
         var valor = objeto.GetType().GetProperty(propriedade)!.GetValue(objeto);

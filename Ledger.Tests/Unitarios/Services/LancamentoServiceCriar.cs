@@ -25,6 +25,8 @@ public class LancamentoServiceCriar
         Descricao = "Aluguel"
     };
 
+    // ---- Caminho feliz ----
+
     [Fact]
     public async Task GravaParDeLancamentosComMesmoIdTransacaoQuandoTransferenciaValida()
     {
@@ -61,6 +63,8 @@ public class LancamentoServiceCriar
 
         Assert.Equal(new[] { -120.50m, 120.50m }, resultado.Value.Select(l => l.Valor));
     }
+
+    // ---- Acesso às contas ----
 
     [Theory]
     [InlineData(99)] // conta que não existe

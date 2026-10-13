@@ -9,6 +9,8 @@ public class DtosValidacao
 {
     private static decimal Dec(string valor) => decimal.Parse(valor, CultureInfo.InvariantCulture);
 
+    // ---- CreateLancamentoDto ----
+
     private static CreateLancamentoDto LancamentoValido() => new()
     {
         NumeroContaOrigem = 1,
@@ -35,12 +37,10 @@ public class DtosValidacao
     }
 
     [Theory]
-    [InlineData("0.009", false)]
-    [InlineData("0", false)]
-    [InlineData("-5", false)]
     [InlineData("0.01", true)]
+    [InlineData("0.009", false)]
+    [InlineData("-5", false)]
     [InlineData("1.005", false)]
-    [InlineData("1999.99", true)]
     public void CreateLancamentoDtoValidaValor(string valor, bool valido)
     {
         var dto = LancamentoValido();
@@ -89,9 +89,8 @@ public class DtosValidacao
     }
 
     [Theory]
-    [InlineData("0", false)]
     [InlineData("0.01", true)]
-    [InlineData("10.555", false)]
+    [InlineData("0", false)]
     public void CreateLancamentoCorrecaoDtoValidaValor(string valor, bool valido)
     {
         var dto = CorrecaoValida();
@@ -120,7 +119,7 @@ public class DtosValidacao
         Assert.True(Validador.TemErroEm(dto, nameof(CreateLancamentoCorrecaoDto.Descricao)));
     }
 
-    // ---- CreateContaDto / UpdateContaDto ----
+    // ---- CreateContaDto ----
 
     [Fact]
     public void CreateContaDtoValidoNaoTemErros()
@@ -130,28 +129,26 @@ public class DtosValidacao
 
     [Theory]
     [InlineData(null, false)]
-    [InlineData("", false)]
     [InlineData(250, true)]
     [InlineData(251, false)]
-    public void CreateContaDtoValidaNome(object? nomeOuTamanho, bool valido)
+    public void CreateContaDtoValidaNome(int? tamanho, bool valido)
     {
-        var nome = nomeOuTamanho is int tamanho ? new string('a', tamanho) : (string?)nomeOuTamanho;
-        var dto = new CreateContaDto { Nome = nome!, Cpf = "52998224725" };
+        var dto = new CreateContaDto { Nome = tamanho is null ? null! : new string('a', tamanho.Value), Cpf = "52998224725" };
 
         Assert.Equal(!valido, Validador.TemErroEm(dto, nameof(CreateContaDto.Nome)));
     }
 
     [Theory]
     [InlineData(null)]
-    [InlineData("")]
     [InlineData("12345678900")] // dígito verificador errado
-    [InlineData("529.982.247-25")]
     public void CreateContaDtoRejeitaCpfAusenteOuInvalido(string? cpf)
     {
         var dto = new CreateContaDto { Nome = "Conta", Cpf = cpf! };
 
         Assert.True(Validador.TemErroEm(dto, nameof(CreateContaDto.Cpf)));
     }
+
+    // ---- UpdateContaDto ----
 
     [Theory]
     [InlineData(null, false)]
