@@ -39,7 +39,7 @@ public class DtosValidacao
     [InlineData("0", false)]
     [InlineData("-5", false)]
     [InlineData("0.01", true)]
-    [InlineData("1.005", false)] // três casas decimais
+    [InlineData("1.005", false)]
     [InlineData("1999.99", true)]
     public void CreateLancamentoDtoValidaValor(string valor, bool valido)
     {
@@ -144,8 +144,8 @@ public class DtosValidacao
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("12345678900")]    // dígito verificador errado
-    [InlineData("529.982.247-25")] // com máscara
+    [InlineData("12345678900")] // dígito verificador errado
+    [InlineData("529.982.247-25")]
     public void CreateContaDtoRejeitaCpfAusenteOuInvalido(string? cpf)
     {
         var dto = new CreateContaDto { Nome = "Conta", Cpf = cpf! };
