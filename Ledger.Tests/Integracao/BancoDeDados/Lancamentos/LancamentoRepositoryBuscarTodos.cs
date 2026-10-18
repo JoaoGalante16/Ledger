@@ -1,8 +1,8 @@
 using Ledger.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Ledger.Tests.Integracao.Suporte;
+using Ledger.Tests.Integracao.BancoDeDados.Suporte;
 
-namespace Ledger.Tests.Integracao.Lancamentos;
+namespace Ledger.Tests.Integracao.BancoDeDados.Lancamentos;
 
 [Collection(nameof(ContextoCollection))]
 public class LancamentoRepositoryBuscarTodos : IAsyncLifetime

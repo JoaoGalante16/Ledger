@@ -1,4 +1,4 @@
-namespace Ledger.Tests.Integracao.Suporte;
+namespace Ledger.Tests.Integracao.BancoDeDados.Suporte;
 
 // todas classes da colecao compartilham o mesmo container
 [CollectionDefinition(nameof(ContextoCollection))]
