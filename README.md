@@ -14,6 +14,7 @@ API REST de livro-razão (ledger) em .NET 10 com contas, lançamentos em partida
 - **Validação de entrada** nos DTOs, com atributos próprios para CPF (dígitos verificadores) e para o limite de duas casas decimais no valor (ver [Regras de validação](#regras-de-validação)).
 - **Autenticação e autorização** com ASP.NET Core Identity (token Bearer) e duas visões de acesso: usuário comum e `Admin`.
 - **Tratamento de erros padronizado**: erros esperados usam FluentResults e são traduzidos para códigos HTTP num lugar só; exceções inesperadas são capturadas por um handler global. Toda resposta de erro segue o formato `ProblemDetails` (RFC 7807).
+- **Testes automatizados em três níveis**: unidade (regras de negócio, sem banco), integração com o banco (repositórios contra um PostgreSQL de verdade em container) e integração da API (endpoints chamados por HTTP, com token Bearer). Ver [Testes](#testes).
 
 ## Tecnologias
 
@@ -25,6 +26,7 @@ API REST de livro-razão (ledger) em .NET 10 com contas, lançamentos em partida
 - FluentResults (resultado de operações, com erros tipados)
 - `IExceptionHandler` + `ProblemDetails` para tratamento global de exceções
 - [Swashbuckle / Swagger UI](https://github.com/domaindrivendev/Swashbuckle.AspNetCore) para a documentação interativa da API, com autenticação Bearer configurada
+- Testes: xUnit v3, Moq, MockQueryable, Bogus, [Testcontainers](https://dotnet.testcontainers.org/) (PostgreSQL), Respawn e `Microsoft.AspNetCore.Mvc.Testing` (`WebApplicationFactory`)
 
 ## Estrutura
 
@@ -45,6 +47,23 @@ Ledger/
 ├── Validation/         # atributos de validação (CpfAttribute, MaximoDuasCasasDecimaisAttribute)
 ├── Migrations/         # migrations do EF Core
 └── Program.cs          # configuração, Identity, Swagger e seed da role Admin
+
+Ledger.Tests/
+├── Unitarios/          # testes de unidade (sem banco)
+│   ├── Suporte/        # cenário com os mocks do Unit of Work, mapper real, validador
+│   ├── Services/       # ContaService e LancamentoService
+│   ├── Validacao/      # DTOs e atributos de validação
+│   └── Api/            # ProblemaDe, GlobalExceptionHandler, extensões do usuário
+└── Integracao/
+    ├── BancoDeDados/   # repositórios contra PostgreSQL em container
+    │   ├── Suporte/    # ContextoFixture (container, migrations, Respawn)
+    │   ├── Contas/
+    │   └── Lancamentos/
+    └── Api/            # endpoints chamados por HTTP
+        ├── Suporte/    # LedgerWebApplicationFactory (API em memória + container)
+        ├── Auth/
+        ├── Contas/
+        └── Lancamentos/
 ```
 
 ## Endpoints
@@ -109,6 +128,31 @@ Todas as respostas de erro usam o formato `ProblemDetails` (RFC 7807):
 | `409` | Conflito com o estado atual: conta com lançamentos que não pode ser excluída, conta já encerrada, encerramento com saldo diferente de zero, ou movimentação envolvendo conta encerrada |
 | `500` | Erro inesperado: o detalhe fica só no log do servidor, a resposta é genérica |
 
+## Testes
+
+São 138 testes, divididos em três níveis:
+
+| Nível | Pasta | Testes | O que cobre |
+| --- | --- | --- | --- |
+| Unidade | `Unitarios/` | 89 | Regras dos services (com o Unit of Work mockado), validação dos DTOs e dos atributos, tradução de erro para status HTTP e o handler de exceções |
+| Integração com o banco | `Integracao/BancoDeDados/` | 18 | Repositórios contra um PostgreSQL de verdade: gravação, busca, filtro por dono traduzido para SQL, `Restrict` das chaves estrangeiras, commit atômico, soma do saldo e a sequence `TransacaoIdSeq` |
+| Integração da API | `Integracao/Api/` | 31 | Todos os endpoints da API (exceto o `/auth/refresh`, que vem pronto do Identity), com token Bearer: status HTTP, `ProblemDetails`, validação, `401`/`403` e isolamento entre usuários |
+
+Como funcionam os testes de integração:
+- Cada coleção de testes sobe **um container de PostgreSQL** com o [Testcontainers](https://dotnet.testcontainers.org/), aplica as migrations uma vez e apaga o container no fim. Não usam o banco de desenvolvimento.
+- **Antes de cada teste**, o [Respawn](https://github.com/jbogard/Respawn) apaga os dados de todas as tabelas, então cada teste começa com o banco vazio e cria o que precisa.
+- Os testes da API sobem a aplicação **em memória** com a `WebApplicationFactory`, trocando a connection string pela do container.
+
+### Como rodar os testes
+
+Pré-requisito: **Docker em execução** (para os testes de integração). Na raiz do repositório:
+
+```bash
+dotnet test
+```
+
+O projeto usa o xUnit v3, que roda pelo Microsoft Testing Platform. O `global.json` na raiz configura o `dotnet test` para isso, exigência do SDK do .NET 10.
+
 ## Como rodar
 
 ### Pré-requisitos
@@ -116,6 +160,7 @@ Todas as respostas de erro usam o formato `ProblemDetails` (RFC 7807):
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - PostgreSQL em execução
 - Ferramenta do EF Core: `dotnet tool install --global dotnet-ef`
+- Docker (só para os testes de integração)
 
 ### Configuração
 
