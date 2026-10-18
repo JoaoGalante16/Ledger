@@ -7,7 +7,7 @@ using Npgsql;
 using Respawn;
 using Testcontainers.PostgreSql;
 
-namespace Ledger.Tests.Integracao.Suporte;
+namespace Ledger.Tests.Integracao.BancoDeDados.Suporte;
 
 public class ContextoFixture : IAsyncLifetime
 {

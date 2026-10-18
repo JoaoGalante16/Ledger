@@ -1,8 +1,8 @@
 using Ledger.Data.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
-using Ledger.Tests.Integracao.Suporte;
+using Ledger.Tests.Integracao.BancoDeDados.Suporte;
 
-namespace Ledger.Tests.Integracao.Contas;
+namespace Ledger.Tests.Integracao.BancoDeDados.Contas;
 
 [Collection(nameof(ContextoCollection))]
 public class ContaRepositoryAdicionar : IAsyncLifetime

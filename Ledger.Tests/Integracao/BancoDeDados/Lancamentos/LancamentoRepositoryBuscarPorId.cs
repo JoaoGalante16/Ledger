@@ -1,7 +1,7 @@
 using Ledger.Data.Repositories;
-using Ledger.Tests.Integracao.Suporte;
+using Ledger.Tests.Integracao.BancoDeDados.Suporte;
 
-namespace Ledger.Tests.Integracao.Lancamentos;
+namespace Ledger.Tests.Integracao.BancoDeDados.Lancamentos;
 
 [Collection(nameof(ContextoCollection))]
 public class LancamentoRepositoryBuscarPorId : IAsyncLifetime
