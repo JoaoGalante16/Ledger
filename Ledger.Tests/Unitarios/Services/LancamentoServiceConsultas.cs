@@ -1,5 +1,5 @@
-using Ledger.Results;
-using Ledger.Services;
+using Ledger.Application.Errors;
+using Ledger.Application.Services;
 using Ledger.Tests.Unitarios.Suporte;
 
 namespace Ledger.Tests.Unitarios.Services;

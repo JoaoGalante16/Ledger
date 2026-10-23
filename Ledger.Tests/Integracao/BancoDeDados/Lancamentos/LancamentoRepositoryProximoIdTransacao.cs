@@ -1,4 +1,4 @@
-using Ledger.Data.Repositories;
+using Ledger.Infrastructure.Repositories;
 using Ledger.Tests.Integracao.BancoDeDados.Suporte;
 
 namespace Ledger.Tests.Integracao.BancoDeDados.Lancamentos;

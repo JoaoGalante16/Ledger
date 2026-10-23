@@ -1,6 +1,6 @@
 using System.Globalization;
-using Ledger.Data.Dtos.ContaDtos;
-using Ledger.Data.Dtos.LancamentoDtos;
+using Ledger.Application.Dtos.Contas;
+using Ledger.Application.Dtos.Lancamentos;
 using Ledger.Tests.Unitarios.Suporte;
 
 namespace Ledger.Tests.Unitarios.Validacao;

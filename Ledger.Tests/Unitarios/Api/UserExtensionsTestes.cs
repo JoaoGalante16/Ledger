@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Ledger.Models;
+using Ledger.Api.Extensions;
 
 namespace Ledger.Tests.Unitarios.Api;
 

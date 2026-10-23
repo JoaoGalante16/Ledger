@@ -2,10 +2,8 @@ using System.Linq.Expressions;
 using AutoMapper;
 using Bogus;
 using Bogus.Extensions.Brazil;
-using Ledger.Data.Repositories.Interfaces;
-using Ledger.Data.UnitOfWork;
-using Ledger.Models;
-using MockQueryable;
+using Ledger.Domain.Entities;
+using Ledger.Domain.Repositories;
 using Moq;
 
 namespace Ledger.Tests.Unitarios.Suporte;
@@ -34,14 +32,35 @@ public class CenarioDeServico
             .ReturnsAsync((Expression<Func<Conta, bool>> predicado) => Contas.FirstOrDefault(predicado.Compile()));
         ContaRepository
             .Setup(r => r.BuscarTodos())
-            .ReturnsAsync(() => Contas.BuildMock());
+            .ReturnsAsync(() => Contas.ToList());
+        ContaRepository
+            .Setup(r => r.BuscarPorUsuario(It.IsAny<string>()))
+            .ReturnsAsync((string idUsuario) => Contas.Where(c => c.IdUsuario == idUsuario).ToList());
 
         LancamentoRepository
             .Setup(r => r.BuscarPorId(It.IsAny<Expression<Func<Lancamento, bool>>>()))
             .ReturnsAsync((Expression<Func<Lancamento, bool>> predicado) => Lancamentos.SingleOrDefault(predicado.Compile()));
         LancamentoRepository
             .Setup(r => r.BuscarTodos())
-            .ReturnsAsync(() => Lancamentos.BuildMock());
+            .ReturnsAsync(() => Lancamentos.ToList());
+        LancamentoRepository
+            .Setup(r => r.BuscarPorUsuario(It.IsAny<string>()))
+            .ReturnsAsync((string idUsuario) => Lancamentos.Where(l => l.Conta.IdUsuario == idUsuario).ToList());
+        LancamentoRepository
+            .Setup(r => r.BuscarPorTransacao(It.IsAny<int>()))
+            .ReturnsAsync((int idTransacao) => Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor).ToList());
+        LancamentoRepository
+            .Setup(r => r.SomarSaldo(It.IsAny<int>()))
+            .ReturnsAsync((int numeroConta) => Lancamentos.Where(l => l.NumeroConta == numeroConta).Sum(l => l.Valor));
+        LancamentoRepository
+            .Setup(r => r.SomarSaldos(It.IsAny<List<int>>()))
+            .ReturnsAsync((List<int> numerosContas) => Lancamentos
+                .Where(l => numerosContas.Contains(l.NumeroConta))
+                .GroupBy(l => l.NumeroConta)
+                .ToDictionary(g => g.Key, g => g.Sum(l => l.Valor)));
+        LancamentoRepository
+            .Setup(r => r.ExisteLancamentoNaConta(It.IsAny<int>()))
+            .ReturnsAsync((int numeroConta) => Lancamentos.Any(l => l.NumeroConta == numeroConta));
         LancamentoRepository
             .Setup(r => r.Adicionar(It.IsAny<Lancamento>()))
             .Callback<Lancamento>(LancamentosAdicionados.Add)

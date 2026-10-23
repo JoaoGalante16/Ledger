@@ -1,8 +1,10 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Ledger.Data;
-using Ledger.Data.Dtos.ContaDtos;
-using Ledger.Models;
+using Ledger.Application.Dtos.Contas;
+using Ledger.Domain.Entities;
+using Ledger.Infrastructure;
+using Ledger.Infrastructure.Data;
+using Ledger.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;

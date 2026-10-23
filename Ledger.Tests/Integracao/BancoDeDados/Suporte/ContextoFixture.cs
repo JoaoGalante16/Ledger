@@ -1,7 +1,9 @@
 using Bogus;
 using Bogus.Extensions.Brazil;
-using Ledger.Data;
-using Ledger.Models;
+using Ledger.Domain.Entities;
+using Ledger.Infrastructure;
+using Ledger.Infrastructure.Data;
+using Ledger.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Respawn;
@@ -74,9 +76,10 @@ public class ContextoFixture : IAsyncLifetime
         return conta;
     }
 
-    public async Task<Lancamento> CriarLancamentoAsync(Conta conta, decimal valor)
+    public async Task<Lancamento> CriarLancamentoAsync(Conta conta, decimal valor, int idTransacao = 0)
     {
         var lancamento = NovoLancamento(conta, valor);
+        lancamento.IdTransacao = idTransacao;
 
         await using var contexto = CriarContexto();
         contexto.Lancamentos.Add(lancamento);

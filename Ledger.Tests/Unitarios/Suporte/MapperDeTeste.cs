@@ -1,5 +1,5 @@
 using AutoMapper;
-using Ledger.Data.Profiles;
+using Ledger.Application.Profiles;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ledger.Tests.Unitarios.Suporte;
