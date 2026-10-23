@@ -1,7 +1,7 @@
-using Ledger.Data.Dtos.ContaDtos;
-using Ledger.Models;
-using Ledger.Results;
-using Ledger.Services;
+using Ledger.Application.Dtos.Contas;
+using Ledger.Application.Errors;
+using Ledger.Application.Services;
+using Ledger.Domain.Entities;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
-using Ledger.Validation;
+using Ledger.Application.Validation;
 
 namespace Ledger.Tests.Unitarios.Validacao;
 

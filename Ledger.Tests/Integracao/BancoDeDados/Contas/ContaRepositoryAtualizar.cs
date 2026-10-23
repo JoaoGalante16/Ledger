@@ -1,4 +1,4 @@
-using Ledger.Data.UnitOfWork;
+using Ledger.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Ledger.Tests.Integracao.BancoDeDados.Suporte;
 

@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using Ledger.Data.Dtos.ContaDtos;
+using Ledger.Application.Dtos.Contas;
 using Ledger.Tests.Integracao.Api.Suporte;
 using Microsoft.AspNetCore.Mvc;
 
