@@ -28,7 +28,7 @@ public class LancamentoRepositoryBuscarPorId : IAsyncLifetime
         var lancamentoEncontrado = await repositorio.BuscarPorId(l => l.Id == lancamento.Id);
         
         Assert.NotNull(lancamentoEncontrado);
-        Assert.Equal(75m, lancamentoEncontrado.Valor);
+        Assert.Equal(75m, lancamentoEncontrado.Valor.Value);
         Assert.Equal(conta.IdUsuario, lancamentoEncontrado.Conta.IdUsuario);
     }
 

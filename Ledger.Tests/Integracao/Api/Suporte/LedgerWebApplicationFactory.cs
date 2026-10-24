@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Ledger.Application.Dtos.Contas;
 using Ledger.Domain.Entities;
+using Ledger.Domain.ValueObjects;
 using Ledger.Infrastructure;
 using Ledger.Infrastructure.Data;
 using Ledger.Infrastructure.Identity;
@@ -108,7 +109,7 @@ public class LedgerWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         var deposito = new Lancamento
         {
             NumeroConta = numeroConta,
-            Valor = valor,
+            Valor = new Valor(valor),
             DataTransacao = DateTime.UtcNow,
             DataGravacao = DateTime.UtcNow,
             Descricao = "Depósito inicial"

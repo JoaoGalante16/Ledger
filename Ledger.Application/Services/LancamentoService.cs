@@ -4,6 +4,7 @@ using Ledger.Application.Dtos.Lancamentos;
 using Ledger.Application.Errors;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Repositories;
+using Ledger.Domain.ValueObjects;
 
 namespace Ledger.Application.Services;
 
@@ -38,7 +39,7 @@ public class LancamentoService : ILancamentoService
         var lancamentoOrigem = _mapper.Map<Lancamento>(dto);
         lancamentoOrigem.IdTransacao = idTransacao;
         lancamentoOrigem.NumeroConta = dto.NumeroContaOrigem;
-        lancamentoOrigem.Valor = -dto.Valor;
+        lancamentoOrigem.Valor = new Valor(-dto.Valor);
         lancamentoOrigem.DataTransacao = DateTime.UtcNow;
         lancamentoOrigem.DataGravacao = DateTime.UtcNow;
 
@@ -113,7 +114,7 @@ public class LancamentoService : ILancamentoService
         lancamentoDestinoCorrecao.IdTransacao = idTransacao;
         lancamentoDestinoCorrecao.NumeroConta = parLancamentosReferencias.Value[1].NumeroConta;
         lancamentoDestinoCorrecao.IdLancamentoReferencia = parLancamentosReferencias.Value[1].Id;
-        lancamentoDestinoCorrecao.Valor = -dto.Valor;
+        lancamentoDestinoCorrecao.Valor = new Valor(-dto.Valor);
         lancamentoDestinoCorrecao.DataTransacao = DateTime.UtcNow;
         lancamentoDestinoCorrecao.DataGravacao = DateTime.UtcNow;
 

@@ -32,7 +32,7 @@ public class LancamentoRepositoryAdicionar : IAsyncLifetime
         await using var leitura = _fixture.CriarContexto();
         var lancamentoSalvo = await leitura.Lancamentos.SingleAsync(l => l.Id == lancamento.Id, TestContext.Current.CancellationToken);
         Assert.Equal(conta.Numero, lancamentoSalvo.NumeroConta);
-        Assert.Equal(120.55m, lancamentoSalvo.Valor);
+        Assert.Equal(120.55m, lancamentoSalvo.Valor.Value);
         Assert.Equal(lancamento.Descricao, lancamentoSalvo.Descricao);
         Assert.Equal(DateTimeKind.Utc, lancamentoSalvo.DataTransacao.Kind);
         Assert.Equal(lancamento.DataTransacao, lancamentoSalvo.DataTransacao, TimeSpan.FromMicroseconds(1));

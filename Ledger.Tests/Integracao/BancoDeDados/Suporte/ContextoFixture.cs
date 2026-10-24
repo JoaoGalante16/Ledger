@@ -1,6 +1,7 @@
 using Bogus;
 using Bogus.Extensions.Brazil;
 using Ledger.Domain.Entities;
+using Ledger.Domain.ValueObjects;
 using Ledger.Infrastructure;
 using Ledger.Infrastructure.Data;
 using Ledger.Infrastructure.Identity;
@@ -93,7 +94,7 @@ public class ContextoFixture : IAsyncLifetime
         return new Conta
         {
             Nome = pessoa.FullName,
-            Cpf = pessoa.Cpf(includeFormatSymbols: false),
+            Cpf = new Cpf(pessoa.Cpf(includeFormatSymbols: false)),
             IdUsuario = dono.Id
         };
     }
@@ -101,7 +102,7 @@ public class ContextoFixture : IAsyncLifetime
     public Lancamento NovoLancamento(Conta conta, decimal valor) => new()
     {
         NumeroConta = conta.Numero,
-        Valor = valor,
+        Valor = new Valor(valor),
         DataTransacao = DateTime.UtcNow,
         DataGravacao = DateTime.UtcNow,
         Descricao = _faker.Lorem.Sentence()

@@ -44,9 +44,9 @@ public class LancamentoServiceCriar
         var debito = _cenario.LancamentosAdicionados.Single(l => l.NumeroConta == origem.Numero);
         var credito = _cenario.LancamentosAdicionados.Single(l => l.NumeroConta == destino.Numero);
 
-        Assert.Equal(-120.50m, debito.Valor);
-        Assert.Equal(120.50m, credito.Valor);
-        Assert.Equal(0m, debito.Valor + credito.Valor);
+        Assert.Equal(-120.50m, debito.Valor.Value);
+        Assert.Equal(120.50m, credito.Valor.Value);
+        Assert.Equal(0m, debito.Valor.Value + credito.Valor.Value);
 
         Assert.Equal(CenarioDeServico.ProximoIdTransacao, debito.IdTransacao);
         Assert.Equal(CenarioDeServico.ProximoIdTransacao, credito.IdTransacao);

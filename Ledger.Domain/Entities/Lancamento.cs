@@ -1,4 +1,6 @@
 ﻿
+using Ledger.Domain.ValueObjects;
+
 namespace Ledger.Domain.Entities;
 
 public class Lancamento
@@ -7,7 +9,7 @@ public class Lancamento
     public int IdTransacao { get; set; }
     public int NumeroConta { get; set; }
     public virtual Conta Conta { get; set; }
-    public decimal Valor { get; set; }
+    public Valor Valor { get; set; }
     public DateTime DataTransacao { get; set; }
     public DateTime DataGravacao { get; set; }
     public string? Descricao { get; set; }

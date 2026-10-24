@@ -32,8 +32,8 @@ public class LancamentoRepositoryBuscarPorTransacao : IAsyncLifetime
         var par = await repositorio.BuscarPorTransacao(500);
 
         Assert.Equal(2, par.Count);
-        Assert.Equal(-100m, par[0].Valor);
+        Assert.Equal(-100m, par[0].Valor.Value);
         Assert.Equal(origem.Numero, par[0].NumeroConta);
-        Assert.Equal(100m, par[1].Valor);
+        Assert.Equal(100m, par[1].Valor.Value);
     }
 }

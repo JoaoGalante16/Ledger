@@ -4,6 +4,7 @@ using Bogus;
 using Bogus.Extensions.Brazil;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Repositories;
+using Ledger.Domain.ValueObjects;
 using Moq;
 
 namespace Ledger.Tests.Unitarios.Suporte;
@@ -48,16 +49,16 @@ public class CenarioDeServico
             .ReturnsAsync((string idUsuario) => Lancamentos.Where(l => l.Conta.IdUsuario == idUsuario).ToList());
         LancamentoRepository
             .Setup(r => r.BuscarPorTransacao(It.IsAny<int>()))
-            .ReturnsAsync((int idTransacao) => Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor).ToList());
+            .ReturnsAsync((int idTransacao) => Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor.Value).ToList());
         LancamentoRepository
             .Setup(r => r.SomarSaldo(It.IsAny<int>()))
-            .ReturnsAsync((int numeroConta) => Lancamentos.Where(l => l.NumeroConta == numeroConta).Sum(l => l.Valor));
+            .ReturnsAsync((int numeroConta) => Lancamentos.Where(l => l.NumeroConta == numeroConta).Sum(l => l.Valor.Value));
         LancamentoRepository
             .Setup(r => r.SomarSaldos(It.IsAny<List<int>>()))
             .ReturnsAsync((List<int> numerosContas) => Lancamentos
                 .Where(l => numerosContas.Contains(l.NumeroConta))
                 .GroupBy(l => l.NumeroConta)
-                .ToDictionary(g => g.Key, g => g.Sum(l => l.Valor)));
+                .ToDictionary(g => g.Key, g => g.Sum(l => l.Valor.Value)));
         LancamentoRepository
             .Setup(r => r.ExisteLancamentoNaConta(It.IsAny<int>()))
             .ReturnsAsync((int numeroConta) => Lancamentos.Any(l => l.NumeroConta == numeroConta));
@@ -80,7 +81,7 @@ public class CenarioDeServico
         {
             Numero = numero,
             Nome = pessoa.FullName,
-            Cpf = pessoa.Cpf(includeFormatSymbols: false),
+            Cpf = new Cpf(pessoa.Cpf(includeFormatSymbols: false)),
             IdUsuario = idUsuario,
             DataEncerramento = encerrada ? DateTime.UtcNow.AddDays(-1) : null
         };
@@ -96,7 +97,7 @@ public class CenarioDeServico
             IdTransacao = idTransacao,
             NumeroConta = conta.Numero,
             Conta = conta,
-            Valor = valor,
+            Valor = new Valor(valor),
             DataTransacao = DateTime.UtcNow,
             DataGravacao = DateTime.UtcNow,
             Descricao = _faker.Lorem.Sentence()

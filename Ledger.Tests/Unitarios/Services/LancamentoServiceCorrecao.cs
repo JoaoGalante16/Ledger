@@ -43,8 +43,8 @@ public class LancamentoServiceCorrecao
         var correcaoDaOrigem = _cenario.LancamentosAdicionados.Single(l => l.NumeroConta == origem.Numero);
         var correcaoDoDestino = _cenario.LancamentosAdicionados.Single(l => l.NumeroConta == destino.Numero);
 
-        Assert.Equal(100m, correcaoDaOrigem.Valor);
-        Assert.Equal(-100m, correcaoDoDestino.Valor);
+        Assert.Equal(100m, correcaoDaOrigem.Valor.Value);
+        Assert.Equal(-100m, correcaoDoDestino.Valor.Value);
         Assert.Equal(debitoOriginal.Id, correcaoDaOrigem.IdLancamentoReferencia);
         Assert.Equal(creditoOriginal.Id, correcaoDoDestino.IdLancamentoReferencia);
 

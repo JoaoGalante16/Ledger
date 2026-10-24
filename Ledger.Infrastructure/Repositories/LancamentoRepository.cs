@@ -49,16 +49,16 @@ public class LancamentoRepository : ILancamentoRepository
 
     public Task<List<Lancamento>> BuscarPorTransacao(int idTransacao)
     {
-        return _context.Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor).ToListAsync();
+        return _context.Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor.Value).ToListAsync();
     }
 
     public Task<decimal> SomarSaldo(int numeroConta)
     {
-        return _context.Lancamentos.Where(l => l.NumeroConta == numeroConta).SumAsync(l => l.Valor);
+        return _context.Lancamentos.Where(l => l.NumeroConta == numeroConta).SumAsync(l => l.Valor.Value);
     }
 
     public Task<Dictionary<int, decimal>> SomarSaldos(List<int> numerosContas)
     {
-        return _context.Lancamentos.Where(l => numerosContas.Contains(l.NumeroConta)).GroupBy(l => l.NumeroConta).Select(g => new { NumeroConta = g.Key, Saldo = g.Sum(l => l.Valor) }).ToDictionaryAsync(x => x.NumeroConta, x => x.Saldo);
+        return _context.Lancamentos.Where(l => numerosContas.Contains(l.NumeroConta)).GroupBy(l => l.NumeroConta).Select(g => new { NumeroConta = g.Key, Saldo = g.Sum(l => l.Valor.Value) }).ToDictionaryAsync(x => x.NumeroConta, x => x.Saldo);
     }
 }
