@@ -15,49 +15,49 @@ public class LancamentoRepository : ILancamentoRepository
         _context = context;
     }
 
-    public async Task<List<Lancamento>> BuscarTodos()
+    public async Task<List<Lancamento>> BuscarTodosAsync()
     {
         return await _context.Lancamentos.ToListAsync();
     }
 
-    public Task<Lancamento?> BuscarPorId(Expression<Func<Lancamento, bool>> predicate)
+    public Task<Lancamento?> BuscarPorIdAsync(Expression<Func<Lancamento, bool>> predicate)
     {
         return _context.Lancamentos.SingleOrDefaultAsync(predicate);
     }
 
-    public async Task Adicionar(Lancamento lancamento)
+    public async Task AdicionarAsync(Lancamento lancamento)
     {
         await _context.Lancamentos.AddAsync(lancamento);
     }
 
-    public async Task<int> ProximoIdTransacao()
+    public async Task<int> ProximoIdTransacaoAsync()
     {
         return await _context.Database
             .SqlQuery<int>($"SELECT nextval('\"TransacaoIdSeq\"') as \"Value\"")
             .FirstAsync();
     }
 
-    public async Task<bool> ExisteLancamentoNaConta(int numeroConta)
+    public async Task<bool> ExisteLancamentoNaContaAsync(int numeroConta)
     {
        return await _context.Lancamentos.AnyAsync(l => l.NumeroConta == numeroConta);
     }
     
-    public async Task<List<Lancamento>> BuscarPorUsuario(string idUsuario)
+    public async Task<List<Lancamento>> BuscarPorUsuarioAsync(string idUsuario)
     {
         return await _context.Lancamentos.Where(l => l.Conta.IdUsuario == idUsuario).ToListAsync();
     }
 
-    public Task<List<Lancamento>> BuscarPorTransacao(int idTransacao)
+    public Task<List<Lancamento>> BuscarPorTransacaoAsync(int idTransacao)
     {
         return _context.Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor.Value).ToListAsync();
     }
 
-    public Task<decimal> SomarSaldo(int numeroConta)
+    public Task<decimal> SomarSaldoAsync(int numeroConta)
     {
         return _context.Lancamentos.Where(l => l.NumeroConta == numeroConta).SumAsync(l => l.Valor.Value);
     }
 
-    public Task<Dictionary<int, decimal>> SomarSaldos(List<int> numerosContas)
+    public Task<Dictionary<int, decimal>> SomarSaldosAsync(List<int> numerosContas)
     {
         return _context.Lancamentos.Where(l => numerosContas.Contains(l.NumeroConta)).GroupBy(l => l.NumeroConta).Select(g => new { NumeroConta = g.Key, Saldo = g.Sum(l => l.Valor.Value) }).ToDictionaryAsync(x => x.NumeroConta, x => x.Saldo);
     }

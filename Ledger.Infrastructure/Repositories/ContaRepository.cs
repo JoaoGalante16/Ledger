@@ -12,7 +12,7 @@ public class ContaRepository : Repository<Conta>, IContaRepository
         
     }
 
-    public async Task<List<Conta>> BuscarPorUsuario(string idUsuario)
+    public async Task<List<Conta>> BuscarPorUsuarioAsync(string idUsuario)
     {
         return await _context.Contas.Where(c => c.IdUsuario == idUsuario).ToListAsync();
     }

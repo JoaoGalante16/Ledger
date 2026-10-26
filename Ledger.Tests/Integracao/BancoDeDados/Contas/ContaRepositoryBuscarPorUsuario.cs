@@ -28,7 +28,7 @@ public class ContaRepositoryBuscarPorUsuario : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new ContaRepository(contexto);
 
-        var contas = await repositorio.BuscarPorUsuario(joao.Id);
+        var contas = await repositorio.BuscarPorUsuarioAsync(joao.Id);
 
         Assert.Equal(2, contas.Count);
         Assert.All(contas, c => Assert.Equal(joao.Id, c.IdUsuario));

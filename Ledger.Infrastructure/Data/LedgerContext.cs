@@ -64,6 +64,12 @@ namespace Ledger.Infrastructure.Data
                 .IsRequired();
 
             modelBuilder.Entity<Lancamento>()
+                .Property(l => l.TipoOperacao)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsRequired();
+
+            modelBuilder.Entity<Lancamento>()
                 .HasOne(l => l.Conta)
                 .WithMany()
                 .HasForeignKey(l => l.NumeroConta)

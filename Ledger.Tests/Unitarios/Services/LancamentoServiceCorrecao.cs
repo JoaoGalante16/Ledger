@@ -35,7 +35,7 @@ public class LancamentoServiceCorrecao
         var debitoOriginal = _cenario.NovoLancamento(origem, -100m, IdTransacaoOriginal, id: 10);
         var creditoOriginal = _cenario.NovoLancamento(destino, 100m, IdTransacaoOriginal, id: 11);
         
-        var resultado = await _service.CriarLancamentoCorrecao(Correcao(100m));
+        var resultado = await _service.CriarLancamentoCorrecaoAsync(Correcao(100m));
         
         Assert.True(resultado.IsSuccess);
         Assert.Equal(2, _cenario.LancamentosAdicionados.Count);
@@ -53,7 +53,7 @@ public class LancamentoServiceCorrecao
             Assert.Equal(CenarioDeServico.ProximoIdTransacao, l.IdTransacao);
             Assert.NotEqual(IdTransacaoOriginal, l.IdTransacao);
         });
-        _cenario.UnitOfWork.Verify(u => u.Commit(), Times.Once);
+        _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Once);
     }
 
     // ---- Transação original ----
@@ -63,7 +63,7 @@ public class LancamentoServiceCorrecao
     {
         _cenario.NovaConta(1);
 
-        var resultado = await _service.CriarLancamentoCorrecao(Correcao(100m));
+        var resultado = await _service.CriarLancamentoCorrecaoAsync(Correcao(100m));
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
         _cenario.VerificarQueNadaFoiGravado();
@@ -81,7 +81,7 @@ public class LancamentoServiceCorrecao
         _cenario.NovoLancamento(origem, -100m, IdTransacaoOriginal);
         _cenario.NovoLancamento(destino, 100m, IdTransacaoOriginal);
 
-        var resultado = await _service.CriarLancamentoCorrecao(Correcao(100m));
+        var resultado = await _service.CriarLancamentoCorrecaoAsync(Correcao(100m));
 
         Assert.True(resultado.HasError<ConflitoError>());
         _cenario.VerificarQueNadaFoiGravado();

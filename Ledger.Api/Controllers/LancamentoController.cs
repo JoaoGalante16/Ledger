@@ -21,16 +21,16 @@ public class LancamentoController : ApiControllerBase
     [HttpPost]
     public async Task<IActionResult> CriaLancamento([FromBody] CreateLancamentoDto dto)
     {
-        var resultado = await _lancamentoService.Criar(dto, User.ObterId(), User.EhAdmin());
+        var resultado = await _lancamentoService.CriarAsync(dto, User.ObterId(), User.EhAdmin());
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
 
     [Authorize]
     [HttpGet]
-    public async Task<IActionResult> Listarlancamentos()
+    public async Task<IActionResult> ListarLancamentos()
     {
-        var lancamento = await _lancamentoService.Listar(User.ObterId(), User.EhAdmin());
+        var lancamento = await _lancamentoService.ListarAsync(User.ObterId(), User.EhAdmin());
         return Ok(lancamento);
     }
 
@@ -38,7 +38,7 @@ public class LancamentoController : ApiControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> BuscarLancamentoPorId(int id)
     {
-        var resultado = await _lancamentoService.Buscar(id, User.ObterId(), User.EhAdmin());
+        var resultado = await _lancamentoService.BuscarAsync(id, User.ObterId(), User.EhAdmin());
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
@@ -47,7 +47,7 @@ public class LancamentoController : ApiControllerBase
     [HttpGet("transacao/{id}")]
     public async Task<IActionResult> BuscarParDeLancamentoPorIdTransacao(int id)
     {
-        var resultado = await _lancamentoService.BuscarParDeLancamentos(id);
+        var resultado = await _lancamentoService.BuscarParDeLancamentosAsync(id);
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
@@ -56,7 +56,7 @@ public class LancamentoController : ApiControllerBase
     [HttpPost("correcao")]
     public async Task<IActionResult> CriarLancamentoDeCorrecao([FromBody] CreateLancamentoCorrecaoDto dto)
     {
-        var resultado = await _lancamentoService.CriarLancamentoCorrecao(dto);
+        var resultado = await _lancamentoService.CriarLancamentoCorrecaoAsync(dto);
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }

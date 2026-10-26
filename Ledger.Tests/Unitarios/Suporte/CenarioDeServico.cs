@@ -29,45 +29,45 @@ public class CenarioDeServico
     public CenarioDeServico()
     {
         ContaRepository
-            .Setup(r => r.BuscarPorPk(It.IsAny<Expression<Func<Conta, bool>>>()))
+            .Setup(r => r.BuscarPorPkAsync(It.IsAny<Expression<Func<Conta, bool>>>()))
             .ReturnsAsync((Expression<Func<Conta, bool>> predicado) => Contas.FirstOrDefault(predicado.Compile()));
         ContaRepository
-            .Setup(r => r.BuscarTodos())
+            .Setup(r => r.BuscarTodosAsync())
             .ReturnsAsync(() => Contas.ToList());
         ContaRepository
-            .Setup(r => r.BuscarPorUsuario(It.IsAny<string>()))
+            .Setup(r => r.BuscarPorUsuarioAsync(It.IsAny<string>()))
             .ReturnsAsync((string idUsuario) => Contas.Where(c => c.IdUsuario == idUsuario).ToList());
 
         LancamentoRepository
-            .Setup(r => r.BuscarPorId(It.IsAny<Expression<Func<Lancamento, bool>>>()))
+            .Setup(r => r.BuscarPorIdAsync(It.IsAny<Expression<Func<Lancamento, bool>>>()))
             .ReturnsAsync((Expression<Func<Lancamento, bool>> predicado) => Lancamentos.SingleOrDefault(predicado.Compile()));
         LancamentoRepository
-            .Setup(r => r.BuscarTodos())
+            .Setup(r => r.BuscarTodosAsync())
             .ReturnsAsync(() => Lancamentos.ToList());
         LancamentoRepository
-            .Setup(r => r.BuscarPorUsuario(It.IsAny<string>()))
+            .Setup(r => r.BuscarPorUsuarioAsync(It.IsAny<string>()))
             .ReturnsAsync((string idUsuario) => Lancamentos.Where(l => l.Conta.IdUsuario == idUsuario).ToList());
         LancamentoRepository
-            .Setup(r => r.BuscarPorTransacao(It.IsAny<int>()))
+            .Setup(r => r.BuscarPorTransacaoAsync(It.IsAny<int>()))
             .ReturnsAsync((int idTransacao) => Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor.Value).ToList());
         LancamentoRepository
-            .Setup(r => r.SomarSaldo(It.IsAny<int>()))
+            .Setup(r => r.SomarSaldoAsync(It.IsAny<int>()))
             .ReturnsAsync((int numeroConta) => Lancamentos.Where(l => l.NumeroConta == numeroConta).Sum(l => l.Valor.Value));
         LancamentoRepository
-            .Setup(r => r.SomarSaldos(It.IsAny<List<int>>()))
+            .Setup(r => r.SomarSaldosAsync(It.IsAny<List<int>>()))
             .ReturnsAsync((List<int> numerosContas) => Lancamentos
                 .Where(l => numerosContas.Contains(l.NumeroConta))
                 .GroupBy(l => l.NumeroConta)
                 .ToDictionary(g => g.Key, g => g.Sum(l => l.Valor.Value)));
         LancamentoRepository
-            .Setup(r => r.ExisteLancamentoNaConta(It.IsAny<int>()))
+            .Setup(r => r.ExisteLancamentoNaContaAsync(It.IsAny<int>()))
             .ReturnsAsync((int numeroConta) => Lancamentos.Any(l => l.NumeroConta == numeroConta));
         LancamentoRepository
-            .Setup(r => r.Adicionar(It.IsAny<Lancamento>()))
+            .Setup(r => r.AdicionarAsync(It.IsAny<Lancamento>()))
             .Callback<Lancamento>(LancamentosAdicionados.Add)
             .Returns(Task.CompletedTask);
         LancamentoRepository
-            .Setup(r => r.ProximoIdTransacao())
+            .Setup(r => r.ProximoIdTransacaoAsync())
             .ReturnsAsync(ProximoIdTransacao);
 
         UnitOfWork.Setup(u => u.ContaRepository).Returns(ContaRepository.Object);
@@ -110,7 +110,7 @@ public class CenarioDeServico
 
     public void VerificarQueNadaFoiGravado()
     {
-        LancamentoRepository.Verify(r => r.Adicionar(It.IsAny<Lancamento>()), Times.Never);
-        UnitOfWork.Verify(u => u.Commit(), Times.Never);
+        LancamentoRepository.Verify(r => r.AdicionarAsync(It.IsAny<Lancamento>()), Times.Never);
+        UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
     }
 }

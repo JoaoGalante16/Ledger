@@ -27,7 +27,7 @@ public class LancamentoRepositoryBuscarTodos : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new LancamentoRepository(contexto);
 
-        var lancamentos = await repositorio.BuscarTodos();
+        var lancamentos = await repositorio.BuscarTodosAsync();
 
         Assert.Equal(3, lancamentos.Count);
     }

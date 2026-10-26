@@ -1,4 +1,6 @@
 
+using Ledger.Domain.Enums;
+
 namespace Ledger.Application.Dtos.Lancamentos;
 
 public class ReadLancamentoDto
@@ -10,5 +12,6 @@ public class ReadLancamentoDto
     public DateTime DataTransacao { get; set; }
     public DateTime DataGravacao { get; set; }
     public string? Descricao { get; set; }
+    public string TipoOperacao { get; set; }
     public int? IdLancamentoReferencia { get; set; }
 }

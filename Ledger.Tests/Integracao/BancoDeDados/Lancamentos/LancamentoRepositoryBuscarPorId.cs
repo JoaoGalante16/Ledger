@@ -25,7 +25,7 @@ public class LancamentoRepositoryBuscarPorId : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new LancamentoRepository(contexto);
         
-        var lancamentoEncontrado = await repositorio.BuscarPorId(l => l.Id == lancamento.Id);
+        var lancamentoEncontrado = await repositorio.BuscarPorIdAsync(l => l.Id == lancamento.Id);
         
         Assert.NotNull(lancamentoEncontrado);
         Assert.Equal(75m, lancamentoEncontrado.Valor.Value);
@@ -38,7 +38,7 @@ public class LancamentoRepositoryBuscarPorId : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new LancamentoRepository(contexto);
         
-        var lancamentoEncontrado = await repositorio.BuscarPorId(l => l.Id == 999_999);
+        var lancamentoEncontrado = await repositorio.BuscarPorIdAsync(l => l.Id == 999_999);
         
         Assert.Null(lancamentoEncontrado);
     }

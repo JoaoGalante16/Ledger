@@ -26,8 +26,8 @@ public class LancamentoRepositoryAdicionar : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
         
-        await unitOfWork.LancamentoRepository.Adicionar(lancamento);
-        await unitOfWork.Commit();
+        await unitOfWork.LancamentoRepository.AdicionarAsync(lancamento);
+        await unitOfWork.CommitAsync();
         
         await using var leitura = _fixture.CriarContexto();
         var lancamentoSalvo = await leitura.Lancamentos.SingleAsync(l => l.Id == lancamento.Id, TestContext.Current.CancellationToken);
@@ -46,8 +46,8 @@ public class LancamentoRepositoryAdicionar : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
         
-        await unitOfWork.LancamentoRepository.Adicionar(lancamento);
-        await unitOfWork.Commit();
+        await unitOfWork.LancamentoRepository.AdicionarAsync(lancamento);
+        await unitOfWork.CommitAsync();
         
         Assert.True(lancamento.IdTransacao > 0);
     }
@@ -62,10 +62,10 @@ public class LancamentoRepositoryAdicionar : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
         
-        await unitOfWork.LancamentoRepository.Adicionar(debito);
-        await unitOfWork.LancamentoRepository.Adicionar(credito);
+        await unitOfWork.LancamentoRepository.AdicionarAsync(debito);
+        await unitOfWork.LancamentoRepository.AdicionarAsync(credito);
         
-        await Assert.ThrowsAsync<DbUpdateException>(() => unitOfWork.Commit());
+        await Assert.ThrowsAsync<DbUpdateException>(() => unitOfWork.CommitAsync());
         await using var leitura = _fixture.CriarContexto();
         Assert.Equal(0, await leitura.Lancamentos.CountAsync(TestContext.Current.CancellationToken));
     }

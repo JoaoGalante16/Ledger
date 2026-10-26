@@ -31,7 +31,7 @@ public class LancamentoRepositorySomarSaldos : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new LancamentoRepository(contexto);
 
-        var saldos = await repositorio.SomarSaldos([conta.Numero, poupanca.Numero]);
+        var saldos = await repositorio.SomarSaldosAsync([conta.Numero, poupanca.Numero]);
 
         Assert.Equal(2, saldos.Count);
         Assert.Equal(300m, saldos[conta.Numero]);
@@ -45,7 +45,7 @@ public class LancamentoRepositorySomarSaldos : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new LancamentoRepository(contexto);
 
-        var saldos = await repositorio.SomarSaldos([conta.Numero]);
+        var saldos = await repositorio.SomarSaldosAsync([conta.Numero]);
 
         Assert.Empty(saldos);
     }
