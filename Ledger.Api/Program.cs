@@ -3,6 +3,7 @@ using Ledger.Domain.Repositories;
 using Ledger.Api.Handlers;
 using Ledger.Infrastructure;
 using Ledger.Infrastructure.Data;
+using Ledger.Infrastructure.Data.Seeds;
 using Ledger.Infrastructure.Identity;
 using Ledger.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
@@ -59,6 +60,9 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<IContaService,ContaService>();
 builder.Services.AddScoped<ILancamentoService, LancamentoService>();
 
+builder.Services.AddScoped<SeedAdmin>();
+builder.Services.AddScoped<SeedContaCaixa>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -66,19 +70,11 @@ app.UseStatusCodePages();
 
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Usuario>>();
+    var seedAdmin = scope.ServiceProvider.GetRequiredService<SeedAdmin>();
+    await seedAdmin.CriarAsync(builder.Configuration["AdminEmail"]);
 
-    if (!await roleManager.RoleExistsAsync("Admin"))
-        await roleManager.CreateAsync(new IdentityRole("Admin"));
-
-    var adminEmail = builder.Configuration["AdminEmail"];
-    if (!string.IsNullOrEmpty(adminEmail))
-    {
-        var admin = await userManager.FindByEmailAsync(adminEmail);
-        if (admin is not null && !await userManager.IsInRoleAsync(admin, "Admin"))
-            await userManager.AddToRoleAsync(admin, "Admin");
-    }
+    var seedContaCaixa = scope.ServiceProvider.GetRequiredService<SeedContaCaixa>();
+    await seedContaCaixa.CriarAsync();
 }
 
 

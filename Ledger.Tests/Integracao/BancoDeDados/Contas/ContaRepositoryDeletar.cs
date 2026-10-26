@@ -24,10 +24,10 @@ public class ContaRepositoryDeletar : IAsyncLifetime
         var conta = await _fixture.CriarContaAsync(await _fixture.CriarUsuarioAsync());
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
-        var contaParaRemover = await unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero == conta.Numero);
+        var contaParaRemover = await unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == conta.Numero);
         
-        await unitOfWork.ContaRepository.Deletar(contaParaRemover!);
-        await unitOfWork.Commit();
+        await unitOfWork.ContaRepository.DeletarAsync(contaParaRemover!);
+        await unitOfWork.CommitAsync();
         
         await using var leitura = _fixture.CriarContexto();
         Assert.False(await leitura.Contas.AnyAsync(c => c.Numero == conta.Numero, TestContext.Current.CancellationToken));
@@ -40,11 +40,11 @@ public class ContaRepositoryDeletar : IAsyncLifetime
         await _fixture.CriarLancamentoAsync(conta, 100m);
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
-        var contaParaRemover = await unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero == conta.Numero);
+        var contaParaRemover = await unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == conta.Numero);
         
-        await unitOfWork.ContaRepository.Deletar(contaParaRemover!);
+        await unitOfWork.ContaRepository.DeletarAsync(contaParaRemover!);
 
-        await Assert.ThrowsAsync<DbUpdateException>(() => unitOfWork.Commit());
+        await Assert.ThrowsAsync<DbUpdateException>(() => unitOfWork.CommitAsync());
         await using var leitura = _fixture.CriarContexto();
         Assert.True(await leitura.Contas.AnyAsync(c => c.Numero == conta.Numero, TestContext.Current.CancellationToken));
     }

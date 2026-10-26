@@ -19,8 +19,8 @@ public class LancamentoRepositoryProximoIdTransacao
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new LancamentoRepository(contexto);
         
-        var primeiro = await repositorio.ProximoIdTransacao();
-        var segundo = await repositorio.ProximoIdTransacao();
+        var primeiro = await repositorio.ProximoIdTransacaoAsync();
+        var segundo = await repositorio.ProximoIdTransacaoAsync();
         
         Assert.True(segundo > primeiro);
     }

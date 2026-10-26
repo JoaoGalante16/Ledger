@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Ledger.Application.Dtos.Contas;
+using Ledger.Domain.Constantes;
 using Ledger.Tests.Integracao.Api.Suporte;
 using Microsoft.AspNetCore.Mvc;
 
@@ -45,5 +46,19 @@ public class ContaEncerrar : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Conflict, resposta.StatusCode);
         var problema = await resposta.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken);
         Assert.Equal("O saldo precisa ser zero para encerrar a conta", problema!.Detail);
+    }
+
+    [Fact]
+    public async Task AdminNaoEncerraAContaCaixa()
+    {
+        using var admin = await _app.CriarClienteAdminAsync("admin@teste.com");
+        await using var contexto = _app.CriarContexto();
+        var caixa = contexto.Contas.Single(c => c.IdUsuario == ContaCaixa.IdUsuario);
+
+        var resposta = await admin.PostAsync($"/Conta/{caixa.Numero}/encerrar", null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Conflict, resposta.StatusCode);
+        var problema = await resposta.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken);
+        Assert.Equal("A conta Caixa é do banco e não pode ser alterada", problema!.Detail);
     }
 }

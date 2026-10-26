@@ -25,7 +25,7 @@ public class LancamentoRepositoryExisteLancamentoNaConta : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new LancamentoRepository(contexto);
 
-        var existe = await repositorio.ExisteLancamentoNaConta(conta.Numero);
+        var existe = await repositorio.ExisteLancamentoNaContaAsync(conta.Numero);
 
         Assert.True(existe);
     }
@@ -39,7 +39,7 @@ public class LancamentoRepositoryExisteLancamentoNaConta : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new LancamentoRepository(contexto);
 
-        var existe = await repositorio.ExisteLancamentoNaConta(conta.Numero);
+        var existe = await repositorio.ExisteLancamentoNaContaAsync(conta.Numero);
 
         Assert.False(existe);
     }

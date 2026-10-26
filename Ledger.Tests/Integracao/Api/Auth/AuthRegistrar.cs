@@ -56,6 +56,6 @@ public class AuthRegistrar : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
         await using var contexto = _app.CriarContexto();
-        Assert.False(await contexto.Users.AnyAsync(TestContext.Current.CancellationToken));
+        Assert.False(await contexto.Users.AnyAsync(u => u.Email == "joao@teste.com", TestContext.Current.CancellationToken));
     }
 }

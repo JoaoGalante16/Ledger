@@ -2,8 +2,10 @@ using System.Linq.Expressions;
 using AutoMapper;
 using Bogus;
 using Bogus.Extensions.Brazil;
+using Ledger.Domain.Constantes;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Repositories;
+using Ledger.Domain.ValueObjects;
 using Moq;
 
 namespace Ledger.Tests.Unitarios.Suporte;
@@ -13,6 +15,7 @@ public class CenarioDeServico
     public const string IdDono = "usuario-dono";
     public const string IdOutroUsuario = "usuario-outro";
     public const int ProximoIdTransacao = 42;
+    public const int NumeroContaCaixa = 999;
 
     private readonly Faker _faker = new("pt_BR");
 
@@ -24,53 +27,59 @@ public class CenarioDeServico
     public Mock<ILancamentoRepository> LancamentoRepository { get; } = new();
     public Mock<IUnitOfWork> UnitOfWork { get; } = new();
     public IMapper Mapper { get; } = MapperDeTeste.Criar();
+    public Conta Caixa { get; }
 
     public CenarioDeServico()
     {
         ContaRepository
-            .Setup(r => r.BuscarPorPk(It.IsAny<Expression<Func<Conta, bool>>>()))
+            .Setup(r => r.BuscarPorPkAsync(It.IsAny<Expression<Func<Conta, bool>>>()))
             .ReturnsAsync((Expression<Func<Conta, bool>> predicado) => Contas.FirstOrDefault(predicado.Compile()));
         ContaRepository
-            .Setup(r => r.BuscarTodos())
+            .Setup(r => r.BuscarTodosAsync())
             .ReturnsAsync(() => Contas.ToList());
         ContaRepository
-            .Setup(r => r.BuscarPorUsuario(It.IsAny<string>()))
+            .Setup(r => r.BuscarPorUsuarioAsync(It.IsAny<string>()))
             .ReturnsAsync((string idUsuario) => Contas.Where(c => c.IdUsuario == idUsuario).ToList());
 
         LancamentoRepository
-            .Setup(r => r.BuscarPorId(It.IsAny<Expression<Func<Lancamento, bool>>>()))
+            .Setup(r => r.BuscarPorIdAsync(It.IsAny<Expression<Func<Lancamento, bool>>>()))
             .ReturnsAsync((Expression<Func<Lancamento, bool>> predicado) => Lancamentos.SingleOrDefault(predicado.Compile()));
         LancamentoRepository
-            .Setup(r => r.BuscarTodos())
+            .Setup(r => r.BuscarTodosAsync())
             .ReturnsAsync(() => Lancamentos.ToList());
         LancamentoRepository
-            .Setup(r => r.BuscarPorUsuario(It.IsAny<string>()))
+            .Setup(r => r.BuscarPorUsuarioAsync(It.IsAny<string>()))
             .ReturnsAsync((string idUsuario) => Lancamentos.Where(l => l.Conta.IdUsuario == idUsuario).ToList());
         LancamentoRepository
-            .Setup(r => r.BuscarPorTransacao(It.IsAny<int>()))
-            .ReturnsAsync((int idTransacao) => Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor).ToList());
+            .Setup(r => r.BuscarPorTransacaoAsync(It.IsAny<int>()))
+            .ReturnsAsync((int idTransacao) => Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor.Value).ToList());
         LancamentoRepository
-            .Setup(r => r.SomarSaldo(It.IsAny<int>()))
-            .ReturnsAsync((int numeroConta) => Lancamentos.Where(l => l.NumeroConta == numeroConta).Sum(l => l.Valor));
+            .Setup(r => r.SomarSaldoAsync(It.IsAny<int>()))
+            .ReturnsAsync((int numeroConta) => Lancamentos.Where(l => l.NumeroConta == numeroConta).Sum(l => l.Valor.Value));
         LancamentoRepository
-            .Setup(r => r.SomarSaldos(It.IsAny<List<int>>()))
+            .Setup(r => r.SomarSaldosAsync(It.IsAny<List<int>>()))
             .ReturnsAsync((List<int> numerosContas) => Lancamentos
                 .Where(l => numerosContas.Contains(l.NumeroConta))
                 .GroupBy(l => l.NumeroConta)
-                .ToDictionary(g => g.Key, g => g.Sum(l => l.Valor)));
+                .ToDictionary(g => g.Key, g => g.Sum(l => l.Valor.Value)));
         LancamentoRepository
-            .Setup(r => r.ExisteLancamentoNaConta(It.IsAny<int>()))
+            .Setup(r => r.ExisteLancamentoNaContaAsync(It.IsAny<int>()))
             .ReturnsAsync((int numeroConta) => Lancamentos.Any(l => l.NumeroConta == numeroConta));
         LancamentoRepository
-            .Setup(r => r.Adicionar(It.IsAny<Lancamento>()))
+            .Setup(r => r.AdicionarAsync(It.IsAny<Lancamento>()))
             .Callback<Lancamento>(LancamentosAdicionados.Add)
             .Returns(Task.CompletedTask);
         LancamentoRepository
-            .Setup(r => r.ProximoIdTransacao())
+            .Setup(r => r.ProximoIdTransacaoAsync())
             .ReturnsAsync(ProximoIdTransacao);
 
         UnitOfWork.Setup(u => u.ContaRepository).Returns(ContaRepository.Object);
         UnitOfWork.Setup(u => u.LancamentoRepository).Returns(LancamentoRepository.Object);
+
+        Caixa = NovaConta(NumeroContaCaixa, ContaCaixa.IdUsuario);
+        ContaRepository
+            .Setup(r => r.BuscarContaCaixaAsync())
+            .ReturnsAsync(() => Caixa);
     }
 
     public Conta NovaConta(int numero, string idUsuario = IdDono, bool encerrada = false)
@@ -80,7 +89,7 @@ public class CenarioDeServico
         {
             Numero = numero,
             Nome = pessoa.FullName,
-            Cpf = pessoa.Cpf(includeFormatSymbols: false),
+            Cpf = new Cpf(pessoa.Cpf(includeFormatSymbols: false)),
             IdUsuario = idUsuario,
             DataEncerramento = encerrada ? DateTime.UtcNow.AddDays(-1) : null
         };
@@ -96,7 +105,7 @@ public class CenarioDeServico
             IdTransacao = idTransacao,
             NumeroConta = conta.Numero,
             Conta = conta,
-            Valor = valor,
+            Valor = new Valor(valor),
             DataTransacao = DateTime.UtcNow,
             DataGravacao = DateTime.UtcNow,
             Descricao = _faker.Lorem.Sentence()
@@ -109,7 +118,7 @@ public class CenarioDeServico
 
     public void VerificarQueNadaFoiGravado()
     {
-        LancamentoRepository.Verify(r => r.Adicionar(It.IsAny<Lancamento>()), Times.Never);
-        UnitOfWork.Verify(u => u.Commit(), Times.Never);
+        LancamentoRepository.Verify(r => r.AdicionarAsync(It.IsAny<Lancamento>()), Times.Never);
+        UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
     }
 }

@@ -4,6 +4,6 @@ namespace Ledger.Domain.Repositories;
 
 public interface IContaRepository : IRepository<Conta>
 {
-    Task<List<Conta>> BuscarPorUsuario(string idUsuario);
-    
+    Task<List<Conta>> BuscarPorUsuarioAsync(string idUsuario);
+    Task<Conta> BuscarContaCaixaAsync();
 }

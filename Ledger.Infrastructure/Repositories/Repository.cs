@@ -13,27 +13,27 @@ public class Repository<T> : IRepository<T> where T : class
         _context = context;
     }
     
-    public async Task<List<T>> BuscarTodos()
+    public async Task<List<T>> BuscarTodosAsync()
     {
         return await _context.Set<T>().ToListAsync();
     }
 
-    public Task<T?> BuscarPorPk(Expression<Func<T, bool>> predicate)
+    public Task<T?> BuscarPorPkAsync(Expression<Func<T, bool>> predicate)
     {
         return _context.Set<T>().SingleOrDefaultAsync(predicate);
     }
 
-    public async Task Adicionar(T entity)
+    public async Task AdicionarAsync(T entity)
     {
         await _context.Set<T>().AddAsync(entity);
     }
 
-    public async Task Atualizar(T entity)
+    public async Task AtualizarAsync(T entity)
     {
         _context.Set<T>().Update(entity);
     }
 
-    public async Task Deletar(T entity)
+    public async Task DeletarAsync(T entity)
     {
         _context.Set<T>().Remove(entity);
     }

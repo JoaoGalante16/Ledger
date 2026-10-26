@@ -2,8 +2,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Ledger.Application.Dtos.Contas;
 using Ledger.Domain.Entities;
+using Ledger.Domain.ValueObjects;
 using Ledger.Infrastructure;
 using Ledger.Infrastructure.Data;
+using Ledger.Infrastructure.Data.Seeds;
 using Ledger.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Hosting;
@@ -71,6 +73,13 @@ public class LedgerWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         await using var conexao = new NpgsqlConnection(_postgresContainer.GetConnectionString());
         await conexao.OpenAsync();
         await _respawner.ResetAsync(conexao);
+
+        using var scope = Services.CreateScope();
+        var seedAdmin = scope.ServiceProvider.GetRequiredService<SeedAdmin>();
+        await seedAdmin.CriarAsync(null);
+
+        var seedContaCaixa = scope.ServiceProvider.GetRequiredService<SeedContaCaixa>();
+        await seedContaCaixa.CriarAsync();
     }
     
     public async Task<HttpClient> CriarClienteAutenticadoAsync(string email, string senha = SenhaPadrao)
@@ -80,7 +89,7 @@ public class LedgerWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         await LogarAsync(client, email, senha);
         return client;
     }
-
+    
     public async Task<HttpClient> CriarClienteAdminAsync(string email, string senha = SenhaPadrao)
     {
         var client = CreateClient();
@@ -108,7 +117,7 @@ public class LedgerWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         var deposito = new Lancamento
         {
             NumeroConta = numeroConta,
-            Valor = valor,
+            Valor = new Valor(valor),
             DataTransacao = DateTime.UtcNow,
             DataGravacao = DateTime.UtcNow,
             Descricao = "Depósito inicial"

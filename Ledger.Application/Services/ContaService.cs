@@ -18,31 +18,31 @@ public class ContaService : IContaService
         _mapper = mapper;
     }
 
-    public async Task<ReadContaDto> Criar(CreateContaDto dto, string idUsuario)
+    public async Task<ReadContaDto> CriarAsync(CreateContaDto dto, string idUsuario)
     {
         var conta = _mapper.Map<Conta>(dto);
         conta.IdUsuario = idUsuario;
-        await _unitOfWork.ContaRepository.Adicionar(conta);
-        await _unitOfWork.Commit();
+        await _unitOfWork.ContaRepository.AdicionarAsync(conta);
+        await _unitOfWork.CommitAsync();
         return _mapper.Map<ReadContaDto>(conta);
 
     }
 
-    public async Task<List<ReadContaDto>> Listar(string idUsuario, bool eAdmin)
+    public async Task<List<ReadContaDto>> ListarAsync(string idUsuario, bool eAdmin)
     {
         List<Conta> contas;
-        var query = await _unitOfWork.ContaRepository.BuscarTodos();
+        var query = await _unitOfWork.ContaRepository.BuscarTodosAsync();
         if (eAdmin)
         {
-            contas = await _unitOfWork.ContaRepository.BuscarTodos();
+            contas = await _unitOfWork.ContaRepository.BuscarTodosAsync();
         }
         else
         {
-            contas = await _unitOfWork.ContaRepository.BuscarPorUsuario(idUsuario);
+            contas = await _unitOfWork.ContaRepository.BuscarPorUsuarioAsync(idUsuario);
         }
 
         var numerosContas = contas.Select(c => c.Numero).ToList();
-        var saldos = await _unitOfWork.LancamentoRepository.SomarSaldos(numerosContas);
+        var saldos = await _unitOfWork.LancamentoRepository.SomarSaldosAsync(numerosContas);
         
         var readDto = _mapper.Map<List<ReadContaDto>>(contas);
         foreach (var conta in readDto)
@@ -52,60 +52,73 @@ public class ContaService : IContaService
         return readDto;
     }
 
-    public async Task<Result> Atualizar(UpdateContaDto dto, int numeroConta, string idUsuario, bool eAdmin)
+    public async Task<Result> AtualizarAsync(UpdateContaDto dto, int numeroConta, string idUsuario, bool eAdmin)
     {
-        var conta = await BuscarContaAcessivel(numeroConta, idUsuario, eAdmin);
-        if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        var conta = await BuscarContaAcessivelAsync(numeroConta, idUsuario, eAdmin);
+        if (conta is null) 
+            return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        
+        var contaCaixa = await _unitOfWork.ContaRepository.BuscarContaCaixaAsync();
+        if (conta.Numero == contaCaixa.Numero) 
+            return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser alterada"));
+        
         _mapper.Map(dto, conta);
-        await _unitOfWork.ContaRepository.Atualizar(conta);
-        await _unitOfWork.Commit();
+        await _unitOfWork.ContaRepository.AtualizarAsync(conta);
+        await _unitOfWork.CommitAsync();
         return Result.Ok();
 
     }
 
-    public async Task<Result> Remover(int numeroConta, string idUsuario, bool eAdmin)
+    public async Task<Result> RemoverAsync(int numeroConta, string idUsuario, bool eAdmin)
     {
-        var conta = await BuscarContaAcessivel(numeroConta, idUsuario, eAdmin);
+        var conta = await BuscarContaAcessivelAsync(numeroConta, idUsuario, eAdmin);
         if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        
+        var contaCaixa = await _unitOfWork.ContaRepository.BuscarContaCaixaAsync();
+        if (conta.Numero == contaCaixa.Numero) 
+            return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser alterada"));
 
-        var temLancamento = await _unitOfWork.LancamentoRepository.ExisteLancamentoNaConta(numeroConta);
+        var temLancamento = await _unitOfWork.LancamentoRepository.ExisteLancamentoNaContaAsync(numeroConta);
         if (temLancamento)
             return Result.Fail(new ConflitoError("A conta tem lançamentos registrados, use a opção de desativar"));
         
-        await _unitOfWork.ContaRepository.Deletar(conta);
-        await _unitOfWork.Commit();
+        await _unitOfWork.ContaRepository.DeletarAsync(conta);
+        await _unitOfWork.CommitAsync();
         return Result.Ok();
     }
 
-    public async Task<Result<ReadContaDto>> Buscar(int numeroConta, string idUsuario, bool eAdmin)
+    public async Task<Result<ReadContaDto>> BuscarAsync(int numeroConta, string idUsuario, bool eAdmin)
     {
-        var conta = await BuscarContaAcessivel(numeroConta, idUsuario, eAdmin);
+        var conta = await BuscarContaAcessivelAsync(numeroConta, idUsuario, eAdmin);
         if (conta is null) 
             return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
-        var saldo = await _unitOfWork.LancamentoRepository.SomarSaldo(numeroConta);
+        var saldo = await _unitOfWork.LancamentoRepository.SomarSaldoAsync(numeroConta);
         var readDto = _mapper.Map<ReadContaDto>(conta);
         readDto.Saldo = saldo;
         return Result.Ok(readDto);
     }
 
-    public async Task<Result> Encerrar(int numeroConta, string idUsuario, bool eAdmin)
+    public async Task<Result> EncerrarAsync(int numeroConta, string idUsuario, bool eAdmin)
     {
-        var conta = await BuscarContaAcessivel(numeroConta, idUsuario, eAdmin);
+        var conta = await BuscarContaAcessivelAsync(numeroConta, idUsuario, eAdmin);
         if (conta is null) 
             return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        var contaCaixa = await _unitOfWork.ContaRepository.BuscarContaCaixaAsync();
+        if (conta.Numero == contaCaixa.Numero) 
+            return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser alterada"));
         if (conta.DataEncerramento is not null)
             return Result.Fail(new ConflitoError("A conta já está encerrada"));
-        var saldo = await _unitOfWork.LancamentoRepository.SomarSaldo(numeroConta);
+        var saldo = await _unitOfWork.LancamentoRepository.SomarSaldoAsync(numeroConta);
         if (saldo != 0) return Result.Fail(new ConflitoError("O saldo precisa ser zero para encerrar a conta"));
 
         conta.DataEncerramento = DateTime.UtcNow;
-        await _unitOfWork.Commit();
+        await _unitOfWork.CommitAsync();
         return Result.Ok();
     }
 
-    private Task<Conta?> BuscarContaAcessivel(int numeroConta, string idUsuario, bool eAdmin)
+    private Task<Conta?> BuscarContaAcessivelAsync(int numeroConta, string idUsuario, bool eAdmin)
     {
-        return _unitOfWork.ContaRepository.BuscarPorPk(c =>
+        return _unitOfWork.ContaRepository.BuscarPorPkAsync(c =>
             c.Numero == numeroConta && (eAdmin || c.IdUsuario == idUsuario));
     }
     

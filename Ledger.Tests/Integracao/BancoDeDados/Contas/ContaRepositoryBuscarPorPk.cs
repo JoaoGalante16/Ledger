@@ -24,7 +24,7 @@ public class ContaRepositoryBuscarPorPk : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new ContaRepository(contexto);
         
-        var contaEncontrada = await repositorio.BuscarPorPk(c => c.Numero == conta.Numero);
+        var contaEncontrada = await repositorio.BuscarPorPkAsync(c => c.Numero == conta.Numero);
         
         Assert.NotNull(contaEncontrada);
         Assert.Equal(conta.Nome, contaEncontrada.Nome);
@@ -36,7 +36,7 @@ public class ContaRepositoryBuscarPorPk : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new ContaRepository(contexto);
         
-        var contaEncontrada = await repositorio.BuscarPorPk(c => c.Numero == 999_999);
+        var contaEncontrada = await repositorio.BuscarPorPkAsync(c => c.Numero == 999_999);
         
         Assert.Null(contaEncontrada);
     }
@@ -49,7 +49,7 @@ public class ContaRepositoryBuscarPorPk : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new ContaRepository(contexto);
         
-        var contaEncontrada = await repositorio.BuscarPorPk(c => c.Numero == conta.Numero && c.IdUsuario == outroUsuario.Id);
+        var contaEncontrada = await repositorio.BuscarPorPkAsync(c => c.Numero == conta.Numero && c.IdUsuario == outroUsuario.Id);
         
         Assert.Null(contaEncontrada);
     }

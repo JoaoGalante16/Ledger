@@ -25,7 +25,7 @@ public class LancamentoServiceConsultas
         _cenario.NovoLancamento(origem, -80m, idTransacao: 5);
         _cenario.NovoLancamento(origem, 999m, idTransacao: 6);
 
-        var resultado = await _service.BuscarParDeLancamentos(5);
+        var resultado = await _service.BuscarParDeLancamentosAsync(5);
 
         Assert.True(resultado.IsSuccess);
         Assert.Equal(new[] { -80m, 80m }, resultado.Value.Select(l => l.Valor));
@@ -42,7 +42,7 @@ public class LancamentoServiceConsultas
         for (var i = 0; i < quantidade; i++)
             _cenario.NovoLancamento(conta, 10m, idTransacao: 5);
 
-        var resultado = await _service.BuscarParDeLancamentos(5);
+        var resultado = await _service.BuscarParDeLancamentosAsync(5);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
     }
@@ -57,7 +57,7 @@ public class LancamentoServiceConsultas
         var conta = _cenario.NovaConta(1);
         var lancamento = _cenario.NovoLancamento(conta, 50m);
 
-        var resultado = await _service.Buscar(lancamento.Id, idUsuario, eAdmin);
+        var resultado = await _service.BuscarAsync(lancamento.Id, idUsuario, eAdmin);
 
         Assert.True(resultado.IsSuccess);
         Assert.Equal(lancamento.Id, resultado.Value.Id);
@@ -72,7 +72,7 @@ public class LancamentoServiceConsultas
         var contaDeOutro = _cenario.NovaConta(1, CenarioDeServico.IdOutroUsuario);
         _cenario.NovoLancamento(contaDeOutro, 50m, id: 1);
 
-        var resultado = await _service.Buscar(idLancamento, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _service.BuscarAsync(idLancamento, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
     }
@@ -88,7 +88,7 @@ public class LancamentoServiceConsultas
         _cenario.NovoLancamento(minha, -3m);
         _cenario.NovoLancamento(deOutro, 7m);
 
-        var lancamentos = await _service.Listar(CenarioDeServico.IdDono, eAdmin: false);
+        var lancamentos = await _service.ListarAsync(CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.Equal(2, lancamentos.Count);
         Assert.All(lancamentos, l => Assert.Equal(minha.Numero, l.NumeroConta));
@@ -102,7 +102,7 @@ public class LancamentoServiceConsultas
         _cenario.NovoLancamento(minha, 10m);
         _cenario.NovoLancamento(deOutro, 7m);
 
-        var lancamentos = await _service.Listar("id-do-admin", eAdmin: true);
+        var lancamentos = await _service.ListarAsync("id-do-admin", eAdmin: true);
 
         Assert.Equal(2, lancamentos.Count);
     }

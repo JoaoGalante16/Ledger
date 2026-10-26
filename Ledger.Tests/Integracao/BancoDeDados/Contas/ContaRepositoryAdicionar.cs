@@ -26,8 +26,8 @@ public class ContaRepositoryAdicionar : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
         
-        await unitOfWork.ContaRepository.Adicionar(conta);
-        await unitOfWork.Commit();
+        await unitOfWork.ContaRepository.AdicionarAsync(conta);
+        await unitOfWork.CommitAsync();
         
         await using var leitura = _fixture.CriarContexto();
         var contaSalva = await leitura.Contas.SingleAsync(c => c.Numero == conta.Numero, TestContext.Current.CancellationToken);
@@ -46,7 +46,7 @@ public class ContaRepositoryAdicionar : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
         
-        await unitOfWork.ContaRepository.Adicionar(conta);
+        await unitOfWork.ContaRepository.AdicionarAsync(conta);
         
         await using var leitura = _fixture.CriarContexto();
         Assert.Equal(0, await leitura.Contas.CountAsync(TestContext.Current.CancellationToken));

@@ -24,11 +24,11 @@ public class ContaRepositoryAtualizar : IAsyncLifetime
         var conta = await _fixture.CriarContaAsync(await _fixture.CriarUsuarioAsync());
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
-        var contaParaAlterar = await unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero == conta.Numero);
+        var contaParaAlterar = await unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == conta.Numero);
         contaParaAlterar!.Nome = "Conta da viagem";
         
-        await unitOfWork.ContaRepository.Atualizar(contaParaAlterar);
-        await unitOfWork.Commit();
+        await unitOfWork.ContaRepository.AtualizarAsync(contaParaAlterar);
+        await unitOfWork.CommitAsync();
         
         await using var leitura = _fixture.CriarContexto();
         var contaSalva = await leitura.Contas.SingleAsync(c => c.Numero == conta.Numero, TestContext.Current.CancellationToken);
@@ -42,10 +42,10 @@ public class ContaRepositoryAtualizar : IAsyncLifetime
         var conta = await _fixture.CriarContaAsync(await _fixture.CriarUsuarioAsync());
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
-        var contaParaEncerrar = await unitOfWork.ContaRepository.BuscarPorPk(c => c.Numero == conta.Numero);
+        var contaParaEncerrar = await unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == conta.Numero);
         
         contaParaEncerrar!.DataEncerramento = DateTime.UtcNow;
-        await unitOfWork.Commit();
+        await unitOfWork.CommitAsync();
         
         await using var leitura = _fixture.CriarContexto();
         var contaSalva = await leitura.Contas.SingleAsync(c => c.Numero == conta.Numero, TestContext.Current.CancellationToken);

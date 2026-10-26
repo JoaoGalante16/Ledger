@@ -21,7 +21,7 @@ public class ContaController : ApiControllerBase
     [HttpPost]
     public async Task<IActionResult> CriaConta([FromBody] CreateContaDto dto)
     {
-        var conta = await _contaService.Criar(dto, User.ObterId());
+        var conta = await _contaService.CriarAsync(dto, User.ObterId());
         return Ok(conta);  
     }
     
@@ -29,7 +29,7 @@ public class ContaController : ApiControllerBase
     [HttpGet]
     public async Task<IActionResult> ListarContas()
     {
-        var contas = await _contaService.Listar(User.ObterId(), User.EhAdmin());
+        var contas = await _contaService.ListarAsync(User.ObterId(), User.EhAdmin());
         return Ok(contas);
     }
 
@@ -37,7 +37,7 @@ public class ContaController : ApiControllerBase
     [HttpPut("{numero}")]
     public async Task<IActionResult> AtualizaConta([FromBody] UpdateContaDto dto,int numero)
     {
-        var resultado = await _contaService.Atualizar(dto, numero, User.ObterId(), User.EhAdmin());
+        var resultado = await _contaService.AtualizarAsync(dto, numero, User.ObterId(), User.EhAdmin());
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return NoContent();
     }
@@ -46,7 +46,7 @@ public class ContaController : ApiControllerBase
     [HttpDelete("{numero}")]
     public async Task<IActionResult> ExcluirConta(int numero)
     {
-        var resultado = await _contaService.Remover(numero,  User.ObterId(), User.EhAdmin());
+        var resultado = await _contaService.RemoverAsync(numero,  User.ObterId(), User.EhAdmin());
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return NoContent();
     }
@@ -55,7 +55,7 @@ public class ContaController : ApiControllerBase
     [HttpGet("{numero}")]
     public async Task<IActionResult> BuscarContaPorNumero(int numero)
     {
-        var resultado = await _contaService.Buscar(numero, User.ObterId(), User.EhAdmin());
+        var resultado = await _contaService.BuscarAsync(numero, User.ObterId(), User.EhAdmin());
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
@@ -64,7 +64,7 @@ public class ContaController : ApiControllerBase
     [HttpPost("{numero}/encerrar")]
     public async Task<IActionResult> EncerrarConta(int numero)
     {
-        var resultado = await _contaService.Encerrar(numero, User.ObterId(), User.EhAdmin());
+        var resultado = await _contaService.EncerrarAsync(numero, User.ObterId(), User.EhAdmin());
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return NoContent();
     }
