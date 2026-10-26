@@ -15,5 +15,6 @@ public class LancamentoProfile : Profile
         CreateMap<Lancamento, ReadLancamentoDto>();
         CreateMap<CreateLancamentoDto, Lancamento>();
         CreateMap<CreateLancamentoCorrecaoDto, Lancamento>();
+        CreateMap<CreateLancamentoDepositoOuSaque, Lancamento>();
     }
 }

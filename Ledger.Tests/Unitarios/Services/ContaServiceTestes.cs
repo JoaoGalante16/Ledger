@@ -70,7 +70,8 @@ public class ContaServiceTestes
 
         var contas = await _service.ListarAsync("id-do-admin", eAdmin: true);
 
-        Assert.Equal(2, contas.Count);
+        Assert.Equal(3, contas.Count);
+        Assert.Contains(contas, c => c.Numero == CenarioDeServico.NumeroContaCaixa);
         Assert.Equal(40m, contas.Single(c => c.Numero == 2).Saldo);
     }
 
@@ -224,6 +225,31 @@ public class ContaServiceTestes
         var resultado = await _service.EncerrarAsync(99, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
+        _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    // ---- Conta Caixa ----
+
+    [Theory]
+    [InlineData("atualizar")]
+    [InlineData("remover")]
+    [InlineData("encerrar")]
+    public async Task AdminNaoAlteraAContaCaixa(string operacao)
+    {
+        var numero = CenarioDeServico.NumeroContaCaixa;
+
+        var resultado = operacao switch
+        {
+            "atualizar" => await _service.AtualizarAsync(new UpdateContaDto { Nome = "Outro nome" }, numero, "id-do-admin", eAdmin: true),
+            "remover" => await _service.RemoverAsync(numero, "id-do-admin", eAdmin: true),
+            _ => await _service.EncerrarAsync(numero, "id-do-admin", eAdmin: true)
+        };
+
+        Assert.True(resultado.HasError<ConflitoError>());
+        Assert.Equal("A conta Caixa é do banco e não pode ser alterada", resultado.Errors[0].Message);
+        Assert.Null(_cenario.Caixa.DataEncerramento);
+        _cenario.ContaRepository.Verify(r => r.AtualizarAsync(It.IsAny<Conta>()), Times.Never);
+        _cenario.ContaRepository.Verify(r => r.DeletarAsync(It.IsAny<Conta>()), Times.Never);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
     }
 }

@@ -60,4 +60,22 @@ public class LancamentoController : ApiControllerBase
         if (resultado.IsFailed) return ProblemaDe(resultado);
         return Ok(resultado.Value);
     }
+    
+    [Authorize]
+    [HttpPost("deposito")]
+    public async Task<IActionResult> Depositar([FromBody] CreateLancamentoDepositoOuSaque dto)
+    {
+        var resultado = await _lancamentoService.DepositarAsync(dto, User.ObterId(), User.EhAdmin());
+        if (resultado.IsFailed) return ProblemaDe(resultado);
+        return Ok(resultado.Value);
+    }
+    
+    [Authorize]
+    [HttpPost("saque")]
+    public async Task<IActionResult> Sacar([FromBody] CreateLancamentoDepositoOuSaque dto)
+    {
+        var resultado = await _lancamentoService.SacarAsync(dto, User.ObterId(), User.EhAdmin());
+        if (resultado.IsFailed) return ProblemaDe(resultado);
+        return Ok(resultado.Value);
+    }
 }

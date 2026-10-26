@@ -1,6 +1,7 @@
 using Ledger.Application.Dtos.Lancamentos;
 using Ledger.Application.Errors;
 using Ledger.Application.Services;
+using Ledger.Domain.Enums;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 
@@ -52,6 +53,7 @@ public class LancamentoServiceCorrecao
         {
             Assert.Equal(CenarioDeServico.ProximoIdTransacao, l.IdTransacao);
             Assert.NotEqual(IdTransacaoOriginal, l.IdTransacao);
+            Assert.Equal(TipoOperacao.Correcao, l.TipoOperacao);
         });
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Once);
     }
@@ -80,6 +82,23 @@ public class LancamentoServiceCorrecao
         var destino = _cenario.NovaConta(2, encerrada: destinoEncerrado);
         _cenario.NovoLancamento(origem, -100m, IdTransacaoOriginal);
         _cenario.NovoLancamento(destino, 100m, IdTransacaoOriginal);
+
+        var resultado = await _service.CriarLancamentoCorrecaoAsync(Correcao(100m));
+
+        Assert.True(resultado.HasError<ConflitoError>());
+        _cenario.VerificarQueNadaFoiGravado();
+    }
+
+    // ---- Depósito e saque ----
+
+    [Theory]
+    [InlineData(TipoOperacao.Deposito)]
+    [InlineData(TipoOperacao.Saque)]
+    public async Task RetornaConflitoQuandoATransacaoOriginalEhDepositoOuSaque(TipoOperacao tipo)
+    {
+        var conta = _cenario.NovaConta(1);
+        _cenario.NovoLancamento(_cenario.Caixa, -100m, IdTransacaoOriginal).TipoOperacao = tipo;
+        _cenario.NovoLancamento(conta, 100m, IdTransacaoOriginal).TipoOperacao = tipo;
 
         var resultado = await _service.CriarLancamentoCorrecaoAsync(Correcao(100m));
 

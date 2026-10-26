@@ -2,6 +2,7 @@ using Ledger.Application.Dtos.Lancamentos;
 using Ledger.Application.Errors;
 using Ledger.Application.Services;
 using Ledger.Domain.Entities;
+using Ledger.Domain.Enums;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 
@@ -51,6 +52,7 @@ public class LancamentoServiceCriar
         Assert.Equal(CenarioDeServico.ProximoIdTransacao, debito.IdTransacao);
         Assert.Equal(CenarioDeServico.ProximoIdTransacao, credito.IdTransacao);
         Assert.All(_cenario.LancamentosAdicionados, l => Assert.Equal("Aluguel", l.Descricao));
+        Assert.All(_cenario.LancamentosAdicionados, l => Assert.Equal(TipoOperacao.Transferencia, l.TipoOperacao));
         Assert.All(_cenario.LancamentosAdicionados, l =>
         {
             Assert.InRange(l.DataTransacao, antes, depois);
@@ -155,5 +157,22 @@ public class LancamentoServiceCriar
 
         Assert.True(resultado.IsSuccess);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    // ---- Conta Caixa ----
+
+    [Theory]
+    [InlineData(CenarioDeServico.NumeroContaCaixa, 1)]
+    [InlineData(1, CenarioDeServico.NumeroContaCaixa)]
+    public async Task AdminNaoTransfereDeNemParaAContaCaixa(int origem, int destino)
+    {
+        var conta = _cenario.NovaConta(1);
+        _cenario.DarSaldo(conta, 100m);
+
+        var resultado = await _service.CriarAsync(Transferencia(origem, destino, 10m), "id-do-admin", eAdmin: true);
+
+        Assert.True(resultado.HasError<ConflitoError>());
+        Assert.Equal("A conta Caixa é do banco e não pode ser movimentada diretamente", resultado.Errors[0].Message);
+        _cenario.VerificarQueNadaFoiGravado();
     }
 }

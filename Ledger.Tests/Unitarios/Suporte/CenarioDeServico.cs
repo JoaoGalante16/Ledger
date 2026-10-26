@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using AutoMapper;
 using Bogus;
 using Bogus.Extensions.Brazil;
+using Ledger.Domain.Constantes;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Repositories;
 using Ledger.Domain.ValueObjects;
@@ -14,6 +15,7 @@ public class CenarioDeServico
     public const string IdDono = "usuario-dono";
     public const string IdOutroUsuario = "usuario-outro";
     public const int ProximoIdTransacao = 42;
+    public const int NumeroContaCaixa = 999;
 
     private readonly Faker _faker = new("pt_BR");
 
@@ -25,6 +27,7 @@ public class CenarioDeServico
     public Mock<ILancamentoRepository> LancamentoRepository { get; } = new();
     public Mock<IUnitOfWork> UnitOfWork { get; } = new();
     public IMapper Mapper { get; } = MapperDeTeste.Criar();
+    public Conta Caixa { get; }
 
     public CenarioDeServico()
     {
@@ -72,6 +75,11 @@ public class CenarioDeServico
 
         UnitOfWork.Setup(u => u.ContaRepository).Returns(ContaRepository.Object);
         UnitOfWork.Setup(u => u.LancamentoRepository).Returns(LancamentoRepository.Object);
+
+        Caixa = NovaConta(NumeroContaCaixa, ContaCaixa.IdUsuario);
+        ContaRepository
+            .Setup(r => r.BuscarContaCaixaAsync())
+            .ReturnsAsync(() => Caixa);
     }
 
     public Conta NovaConta(int numero, string idUsuario = IdDono, bool encerrada = false)

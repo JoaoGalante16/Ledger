@@ -16,7 +16,7 @@ namespace Ledger.Migrations
                 type: "character varying(20)",
                 maxLength: 20,
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "Transferencia");
         }
 
         /// <inheritdoc />

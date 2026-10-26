@@ -55,7 +55,13 @@ public class ContaService : IContaService
     public async Task<Result> AtualizarAsync(UpdateContaDto dto, int numeroConta, string idUsuario, bool eAdmin)
     {
         var conta = await BuscarContaAcessivelAsync(numeroConta, idUsuario, eAdmin);
-        if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        if (conta is null) 
+            return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        
+        var contaCaixa = await _unitOfWork.ContaRepository.BuscarContaCaixaAsync();
+        if (conta.Numero == contaCaixa.Numero) 
+            return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser alterada"));
+        
         _mapper.Map(dto, conta);
         await _unitOfWork.ContaRepository.AtualizarAsync(conta);
         await _unitOfWork.CommitAsync();
@@ -67,6 +73,10 @@ public class ContaService : IContaService
     {
         var conta = await BuscarContaAcessivelAsync(numeroConta, idUsuario, eAdmin);
         if (conta is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        
+        var contaCaixa = await _unitOfWork.ContaRepository.BuscarContaCaixaAsync();
+        if (conta.Numero == contaCaixa.Numero) 
+            return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser alterada"));
 
         var temLancamento = await _unitOfWork.LancamentoRepository.ExisteLancamentoNaContaAsync(numeroConta);
         if (temLancamento)
@@ -93,6 +103,9 @@ public class ContaService : IContaService
         var conta = await BuscarContaAcessivelAsync(numeroConta, idUsuario, eAdmin);
         if (conta is null) 
             return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
+        var contaCaixa = await _unitOfWork.ContaRepository.BuscarContaCaixaAsync();
+        if (conta.Numero == contaCaixa.Numero) 
+            return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser alterada"));
         if (conta.DataEncerramento is not null)
             return Result.Fail(new ConflitoError("A conta já está encerrada"));
         var saldo = await _unitOfWork.LancamentoRepository.SomarSaldoAsync(numeroConta);
