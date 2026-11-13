@@ -32,12 +32,7 @@ public class SeedContaCaixa
 
         if (!await _context.Contas.AnyAsync(c => c.IdUsuario == ContaCaixa.IdUsuario))
         {
-            _context.Contas.Add(new Conta
-            {
-                Nome = ContaCaixa.Nome,
-                Cpf = new Cpf(ContaCaixa.Cpf),
-                IdUsuario = ContaCaixa.IdUsuario
-            });
+            _context.Contas.Add(new Conta(ContaCaixa.Nome, new Cpf(ContaCaixa.Cpf), ContaCaixa.IdUsuario));
         }
 
         await _context.SaveChangesAsync();

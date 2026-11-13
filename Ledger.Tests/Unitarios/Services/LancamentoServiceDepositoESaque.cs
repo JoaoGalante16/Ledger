@@ -4,6 +4,7 @@ using Ledger.Application.Errors;
 using Ledger.Application.Services;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Enums;
+using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 
@@ -83,14 +84,14 @@ public class LancamentoServiceDepositoESaque
     }
 
     [Fact]
-    public async Task SaqueRetornaSaldoInsuficienteQuandoSaldoMenorQueValor()
+    public async Task SaqueLancaSaldoInsuficienteQuandoSaldoMenorQueValor()
     {
         var conta = _cenario.NovaConta(1);
         _cenario.DarSaldo(conta, 99.99m);
 
-        var resultado = await _service.SacarAsync(Operacao(1, 100m), CenarioDeServico.IdDono, eAdmin: false);
+        await Assert.ThrowsAsync<SaldoInsuficienteException>(() =>
+            _service.SacarAsync(Operacao(1, 100m), CenarioDeServico.IdDono, eAdmin: false));
 
-        Assert.True(resultado.HasError<SaldoInsuficienteError>());
         _cenario.VerificarQueNadaFoiGravado();
     }
 
@@ -114,15 +115,13 @@ public class LancamentoServiceDepositoESaque
     [Theory]
     [InlineData("deposito")]
     [InlineData("saque")]
-    public async Task RetornaConflitoQuandoAContaEstaEncerrada(string operacao)
+    public async Task LancaContaEncerradaQuandoAContaEstaEncerrada(string operacao)
     {
         var conta = _cenario.NovaConta(1, encerrada: true);
         _cenario.DarSaldo(conta, 500m);
 
-        var resultado = await ExecutarAsync(operacao, 1, 10m);
+        await Assert.ThrowsAsync<ContaEncerradaException>(() => ExecutarAsync(operacao, 1, 10m));
 
-        Assert.True(resultado.HasError<ConflitoError>());
-        Assert.Equal("A conta foi encerrada", resultado.Errors[0].Message);
         _cenario.VerificarQueNadaFoiGravado();
     }
 

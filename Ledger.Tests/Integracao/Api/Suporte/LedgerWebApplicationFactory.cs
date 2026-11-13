@@ -1,12 +1,14 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Ledger.Application.Dtos.Contas;
+using Ledger.Domain.Constantes;
 using Ledger.Domain.Entities;
+using Ledger.Domain.Enums;
 using Ledger.Domain.ValueObjects;
-using Ledger.Infrastructure;
 using Ledger.Infrastructure.Data;
 using Ledger.Infrastructure.Data.Seeds;
 using Ledger.Infrastructure.Identity;
+using Ledger.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -114,20 +116,32 @@ public class LedgerWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     
     public async Task<Lancamento> DepositarAsync(int numeroConta, decimal valor)
     {
-        var deposito = new Lancamento
-        {
-            NumeroConta = numeroConta,
-            Valor = new Valor(valor),
-            DataTransacao = DateTime.UtcNow,
-            DataGravacao = DateTime.UtcNow,
-            Descricao = "Depósito inicial"
-        };
-
+        var cancelamento = TestContext.Current.CancellationToken;
         await using var contexto = CriarContexto();
-        contexto.Lancamentos.Add(deposito);
-        await contexto.SaveChangesAsync(TestContext.Current.CancellationToken);
-        return deposito;
+        var conta = await contexto.Contas.SingleAsync(c => c.Numero == numeroConta, cancelamento);
+        var caixa = await contexto.Contas.SingleAsync(c => c.IdUsuario == ContaCaixa.IdUsuario, cancelamento);
+        var idTransacao = await new LancamentoRepository(contexto).ProximoIdTransacaoAsync();
+
+        caixa.Debitar(new Valor(valor));
+        conta.Creditar(new Valor(valor));
+
+        var daCaixa = NovoDeposito(caixa.Numero, -valor, idTransacao);
+        var naConta = NovoDeposito(numeroConta, valor, idTransacao);
+        contexto.Lancamentos.AddRange(daCaixa, naConta);
+        await contexto.SaveChangesAsync(cancelamento);
+        return naConta;
     }
+
+    private static Lancamento NovoDeposito(int numeroConta, decimal valor, int idTransacao) => new()
+    {
+        IdTransacao = idTransacao,
+        NumeroConta = numeroConta,
+        Valor = new Valor(valor),
+        TipoOperacao = TipoOperacao.Deposito,
+        DataTransacao = DateTime.UtcNow,
+        DataGravacao = DateTime.UtcNow,
+        Descricao = "Depósito inicial"
+    };
 
     private static async Task RegistrarAsync(HttpClient client, string email, string senha)
     {

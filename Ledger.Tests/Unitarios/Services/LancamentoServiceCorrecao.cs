@@ -2,6 +2,7 @@ using Ledger.Application.Dtos.Lancamentos;
 using Ledger.Application.Errors;
 using Ledger.Application.Services;
 using Ledger.Domain.Enums;
+using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 
@@ -76,16 +77,15 @@ public class LancamentoServiceCorrecao
     [Theory]
     [InlineData(true, false)]
     [InlineData(false, true)]
-    public async Task RetornaConflitoQuandoAlgumaContaDoParEstaEncerrada(bool origemEncerrada, bool destinoEncerrado)
+    public async Task LancaContaEncerradaQuandoAlgumaContaDoParEstaEncerrada(bool origemEncerrada, bool destinoEncerrado)
     {
         var origem = _cenario.NovaConta(1, encerrada: origemEncerrada);
         var destino = _cenario.NovaConta(2, encerrada: destinoEncerrado);
         _cenario.NovoLancamento(origem, -100m, IdTransacaoOriginal);
         _cenario.NovoLancamento(destino, 100m, IdTransacaoOriginal);
 
-        var resultado = await _service.CriarLancamentoCorrecaoAsync(Correcao(100m));
+        await Assert.ThrowsAsync<ContaEncerradaException>(() => _service.CriarLancamentoCorrecaoAsync(Correcao(100m)));
 
-        Assert.True(resultado.HasError<ConflitoError>());
         _cenario.VerificarQueNadaFoiGravado();
     }
 

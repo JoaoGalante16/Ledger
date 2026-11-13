@@ -26,6 +26,19 @@ namespace Ledger.Infrastructure.Data
             modelBuilder.Entity<Conta>()
                 .Property(c => c.Nome).IsRequired();
 
+            modelBuilder.Entity<Conta>()
+                .OwnsOne(c => c.Saldo, saldo =>
+                {
+                    saldo.Property(p => p.Value)
+                        .HasColumnName("Saldo")
+                        .HasColumnType("decimal(18,2)")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity<Conta>()
+                .Navigation(c => c.Saldo)
+                .IsRequired();
+
             // liga o valueObject a coluna existente e torna obrigatório o Value (string)
             modelBuilder.Entity<Conta>()
                 .OwnsOne(c => c.Cpf, cpf =>
@@ -74,7 +87,6 @@ namespace Ledger.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(l => l.NumeroConta)
                 .OnDelete(DeleteBehavior.Restrict);
-
             modelBuilder.Entity<Lancamento>()
                 .HasOne(l => l.LancamentoReferencia)
                 .WithMany()

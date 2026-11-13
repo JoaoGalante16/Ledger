@@ -299,6 +299,23 @@ namespace Ledger.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.OwnsOne("Ledger.Domain.ValueObjects.Valor", "Saldo", b1 =>
+                        {
+                            b1.Property<int>("ContaNumero")
+                                .HasColumnType("integer");
+
+                            b1.Property<decimal>("Value")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("Saldo");
+
+                            b1.HasKey("ContaNumero");
+
+                            b1.ToTable("Contas");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ContaNumero");
+                        });
+
                     b.OwnsOne("Ledger.Domain.ValueObjects.Cpf", "Cpf", b1 =>
                         {
                             b1.Property<int>("ContaNumero")
@@ -318,6 +335,9 @@ namespace Ledger.Migrations
                         });
 
                     b.Navigation("Cpf")
+                        .IsRequired();
+
+                    b.Navigation("Saldo")
                         .IsRequired();
                 });
 

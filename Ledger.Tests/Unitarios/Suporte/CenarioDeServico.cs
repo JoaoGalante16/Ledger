@@ -85,14 +85,10 @@ public class CenarioDeServico
     public Conta NovaConta(int numero, string idUsuario = IdDono, bool encerrada = false)
     {
         var pessoa = new Person("pt_BR");
-        var conta = new Conta
-        {
-            Numero = numero,
-            Nome = pessoa.FullName,
-            Cpf = new Cpf(pessoa.Cpf(includeFormatSymbols: false)),
-            IdUsuario = idUsuario,
-            DataEncerramento = encerrada ? DateTime.UtcNow.AddDays(-1) : null
-        };
+        var conta = new Conta(pessoa.FullName, new Cpf(pessoa.Cpf(includeFormatSymbols: false)), idUsuario);
+        Definir(conta, nameof(Conta.Numero), numero);
+        if (encerrada)
+            Definir(conta, nameof(Conta.DataEncerramento), DateTime.UtcNow.AddDays(-1));
         Contas.Add(conta);
         return conta;
     }
@@ -111,10 +107,14 @@ public class CenarioDeServico
             Descricao = _faker.Lorem.Sentence()
         };
         Lancamentos.Add(lancamento);
+        Definir(conta, nameof(Conta.Saldo), new Valor(conta.Saldo.Value + valor));
         return lancamento;
     }
     
     public void DarSaldo(Conta conta, decimal saldo) => NovoLancamento(conta, saldo, idTransacao: 900 + Lancamentos.Count);
+
+    private static void Definir(Conta conta, string propriedade, object? valor) =>
+        typeof(Conta).GetProperty(propriedade)!.SetValue(conta, valor);
 
     public void VerificarQueNadaFoiGravado()
     {
