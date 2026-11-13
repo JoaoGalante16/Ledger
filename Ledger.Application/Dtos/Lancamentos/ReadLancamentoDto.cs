@@ -1,5 +1,4 @@
 
-using Ledger.Domain.Enums;
 
 namespace Ledger.Application.Dtos.Lancamentos;
 

@@ -1,7 +1,6 @@
 using Ledger.Application.Services;
 using Ledger.Domain.Repositories;
 using Ledger.Api.Handlers;
-using Ledger.Infrastructure;
 using Ledger.Infrastructure.Data;
 using Ledger.Infrastructure.Data.Seeds;
 using Ledger.Infrastructure.Identity;

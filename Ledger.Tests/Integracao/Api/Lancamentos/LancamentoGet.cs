@@ -78,6 +78,8 @@ public class LancamentoGet : IAsyncLifetime
         var lancamentos = await admin.GetFromJsonAsync<List<ReadLancamentoDto>>("/Lancamento", TestContext.Current.CancellationToken);
 
         Assert.NotNull(lancamentos);
-        Assert.Equal(new[] { contaDoJoao.Numero, contaDaMaria.Numero }.Order(), lancamentos.Select(l => l.NumeroConta).Order());
+        Assert.Equal(4, lancamentos.Count);
+        Assert.Contains(lancamentos, l => l.NumeroConta == contaDoJoao.Numero);
+        Assert.Contains(lancamentos, l => l.NumeroConta == contaDaMaria.Numero);
     }
 }

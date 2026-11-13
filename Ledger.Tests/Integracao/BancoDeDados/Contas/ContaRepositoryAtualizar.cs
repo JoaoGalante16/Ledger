@@ -25,7 +25,7 @@ public class ContaRepositoryAtualizar : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var unitOfWork = new UnitOfWork(contexto);
         var contaParaAlterar = await unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == conta.Numero);
-        contaParaAlterar!.Nome = "Conta da viagem";
+        contaParaAlterar!.Renomear("Conta da viagem");
         
         await unitOfWork.ContaRepository.AtualizarAsync(contaParaAlterar);
         await unitOfWork.CommitAsync();
@@ -44,7 +44,7 @@ public class ContaRepositoryAtualizar : IAsyncLifetime
         var unitOfWork = new UnitOfWork(contexto);
         var contaParaEncerrar = await unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == conta.Numero);
         
-        contaParaEncerrar!.DataEncerramento = DateTime.UtcNow;
+        contaParaEncerrar!.Encerrar();
         await unitOfWork.CommitAsync();
         
         await using var leitura = _fixture.CriarContexto();

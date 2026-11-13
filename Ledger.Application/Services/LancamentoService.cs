@@ -2,7 +2,6 @@ using AutoMapper;
 using FluentResults;
 using Ledger.Application.Dtos.Lancamentos;
 using Ledger.Application.Errors;
-using Ledger.Domain.Constantes;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Enums;
 using Ledger.Domain.Repositories;
@@ -32,13 +31,9 @@ public class LancamentoService : ILancamentoService
         if (contaOrigem.Numero == contaCaixa.Numero || contaDestino.Numero == contaCaixa.Numero)
             return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser movimentada diretamente"));
 
-        if (contaOrigem.DataEncerramento is not null)
-            return Result.Fail(new ConflitoError("A conta de origem foi encerrada"));
-        if (contaDestino.DataEncerramento is not null)
-            return Result.Fail(new ConflitoError("A conta de destino foi encerrada"));
-        
-        var saldo = await _unitOfWork.LancamentoRepository.SomarSaldoAsync(dto.NumeroContaOrigem);
-        if(saldo <  dto.Valor) return Result.Fail(new SaldoInsuficienteError("Saldo insuficiente"));
+        var valor = new Valor(dto.Valor);
+        contaOrigem.Debitar(valor);
+        contaDestino.Creditar(valor);
 
         var idTransacao = await _unitOfWork.LancamentoRepository.ProximoIdTransacaoAsync();
 
@@ -107,10 +102,9 @@ public class LancamentoService : ILancamentoService
         var contaOrigem = await _unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == parLancamentosReferencias.Value[0].NumeroConta);
         var contaDestino = await _unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == parLancamentosReferencias.Value[1].NumeroConta);
         
-        if (contaOrigem.DataEncerramento is not null)
-            return Result.Fail(new ConflitoError("A conta de origem foi encerrada"));
-        if (contaDestino.DataEncerramento is not null)
-            return Result.Fail(new ConflitoError("A conta de destino foi encerrada"));
+        var valor = new Valor(dto.Valor);
+        contaOrigem.Creditar(valor);
+        contaDestino.Debitar(valor);
 
         var idTransacao = await _unitOfWork.LancamentoRepository.ProximoIdTransacaoAsync();
 
@@ -149,8 +143,9 @@ public class LancamentoService : ILancamentoService
         if (contaCliente.Numero == contaCaixa.Numero)
             return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser movimentada diretamente"));
         
-        if (contaCliente.DataEncerramento is not null)
-            return Result.Fail(new ConflitoError("A conta foi encerrada"));
+        var valor = new Valor(dto.Valor);
+        contaCaixa.Debitar(valor);
+        contaCliente.Creditar(valor);
 
         var idTransacao = await _unitOfWork.LancamentoRepository.ProximoIdTransacaoAsync();
 
@@ -187,11 +182,9 @@ public class LancamentoService : ILancamentoService
         if (contaCliente.Numero == contaCaixa.Numero)
             return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser movimentada diretamente"));
         
-        if (contaCliente.DataEncerramento is not null)
-            return Result.Fail(new ConflitoError("A conta foi encerrada"));
-        
-        var saldo = await _unitOfWork.LancamentoRepository.SomarSaldoAsync(contaCliente.Numero);
-        if(saldo <  dto.Valor) return Result.Fail(new SaldoInsuficienteError("Saldo insuficiente"));
+        var valor = new Valor(dto.Valor);
+        contaCliente.Debitar(valor);
+        contaCaixa.Creditar(valor);
 
         var idTransacao = await _unitOfWork.LancamentoRepository.ProximoIdTransacaoAsync();
 

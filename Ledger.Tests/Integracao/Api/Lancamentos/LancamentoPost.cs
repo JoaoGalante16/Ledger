@@ -79,7 +79,7 @@ public class LancamentoPost : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.Conflict, resposta.StatusCode);
         var problema = await resposta.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken);
-        Assert.Equal("A conta de destino foi encerrada", problema!.Detail);
+        Assert.Equal("Conta encerrada", problema!.Detail);
     }
 
     [Fact]

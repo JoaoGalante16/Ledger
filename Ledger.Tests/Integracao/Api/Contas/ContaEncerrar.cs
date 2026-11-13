@@ -45,7 +45,7 @@ public class ContaEncerrar : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.Conflict, resposta.StatusCode);
         var problema = await resposta.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken);
-        Assert.Equal("O saldo precisa ser zero para encerrar a conta", problema!.Detail);
+        Assert.Equal("Existe saldo disponível na conta", problema!.Detail);
     }
 
     [Fact]
@@ -59,6 +59,6 @@ public class ContaEncerrar : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.Conflict, resposta.StatusCode);
         var problema = await resposta.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken);
-        Assert.Equal("A conta Caixa é do banco e não pode ser alterada", problema!.Detail);
+        Assert.Equal("Não é possível encerrar a conta caixa", problema!.Detail);
     }
 }

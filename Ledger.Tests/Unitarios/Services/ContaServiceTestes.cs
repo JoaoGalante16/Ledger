@@ -2,6 +2,7 @@ using Ledger.Application.Dtos.Contas;
 using Ledger.Application.Errors;
 using Ledger.Application.Services;
 using Ledger.Domain.Entities;
+using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 
@@ -194,27 +195,27 @@ public class ContaServiceTestes
     [Theory]
     [InlineData("0.01")]
     [InlineData("-0.01")]
-    public async Task EncerrarRetornaConflitoQuandoSaldoDiferenteDeZero(string saldo)
+    public async Task EncerrarLancaExcecaoQuandoSaldoDiferenteDeZero(string saldo)
     {
         var conta = _cenario.NovaConta(1);
         _cenario.NovoLancamento(conta, decimal.Parse(saldo, System.Globalization.CultureInfo.InvariantCulture));
 
-        var resultado = await _service.EncerrarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
+        await Assert.ThrowsAsync<SaldoEmContaExistenteException>(() =>
+            _service.EncerrarAsync(1, CenarioDeServico.IdDono, eAdmin: false));
 
-        Assert.True(resultado.HasError<ConflitoError>());
         Assert.Null(conta.DataEncerramento);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
     }
 
     [Fact]
-    public async Task EncerrarRetornaConflitoQuandoContaJaEstaEncerrada()
+    public async Task EncerrarLancaExcecaoQuandoContaJaEstaEncerrada()
     {
         var conta = _cenario.NovaConta(1, encerrada: true);
         var dataOriginal = conta.DataEncerramento;
 
-        var resultado = await _service.EncerrarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
+        await Assert.ThrowsAsync<ContaEncerradaException>(() =>
+            _service.EncerrarAsync(1, CenarioDeServico.IdDono, eAdmin: false));
 
-        Assert.True(resultado.HasError<ConflitoError>());
         Assert.Equal(dataOriginal, conta.DataEncerramento);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
     }
@@ -232,23 +233,26 @@ public class ContaServiceTestes
 
     [Theory]
     [InlineData("atualizar")]
-    [InlineData("remover")]
     [InlineData("encerrar")]
     public async Task AdminNaoAlteraAContaCaixa(string operacao)
     {
         var numero = CenarioDeServico.NumeroContaCaixa;
 
-        var resultado = operacao switch
-        {
-            "atualizar" => await _service.AtualizarAsync(new UpdateContaDto { Nome = "Outro nome" }, numero, "id-do-admin", eAdmin: true),
-            "remover" => await _service.RemoverAsync(numero, "id-do-admin", eAdmin: true),
-            _ => await _service.EncerrarAsync(numero, "id-do-admin", eAdmin: true)
-        };
+        await Assert.ThrowsAsync<OperacaoNaoPermitidaException>(() => operacao == "atualizar"
+            ? _service.AtualizarAsync(new UpdateContaDto { Nome = "Outro nome" }, numero, "id-do-admin", eAdmin: true)
+            : _service.EncerrarAsync(numero, "id-do-admin", eAdmin: true));
+
+        Assert.Null(_cenario.Caixa.DataEncerramento);
+        _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task AdminNaoRemoveAContaCaixa()
+    {
+        var resultado = await _service.RemoverAsync(CenarioDeServico.NumeroContaCaixa, "id-do-admin", eAdmin: true);
 
         Assert.True(resultado.HasError<ConflitoError>());
         Assert.Equal("A conta Caixa é do banco e não pode ser alterada", resultado.Errors[0].Message);
-        Assert.Null(_cenario.Caixa.DataEncerramento);
-        _cenario.ContaRepository.Verify(r => r.AtualizarAsync(It.IsAny<Conta>()), Times.Never);
         _cenario.ContaRepository.Verify(r => r.DeletarAsync(It.IsAny<Conta>()), Times.Never);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
     }

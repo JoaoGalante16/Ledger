@@ -31,15 +31,6 @@ public class ApiControllerBaseTestes
     }
 
     [Fact]
-    public void SaldoInsuficienteViraStatus400()
-    {
-        var problema = Converter(new SaldoInsuficienteError("Saldo insuficiente"), out var status);
-
-        Assert.Equal(400, status);
-        Assert.Equal("Saldo insuficiente", problema.Detail);
-    }
-
-    [Fact]
     public void ConflitoViraStatus409()
     {
         var problema = Converter(new ConflitoError("A conta já está encerrada"), out var status);
