@@ -1,17 +1,21 @@
 using Ledger.Application.Errors;
-using Ledger.Application.Services;
+using Ledger.Application.UseCases.Lancamentos;
 using Ledger.Tests.Unitarios.Suporte;
 
-namespace Ledger.Tests.Unitarios.Services;
+namespace Ledger.Tests.Unitarios.UseCases.Lancamentos;
 
-public class LancamentoServiceConsultas
+public class ConsultasDeLancamentoTestes
 {
     private readonly CenarioDeServico _cenario = new();
-    private readonly LancamentoService _service;
+    private readonly BuscarParDaTransacao _buscarParDaTransacao;
+    private readonly BuscarLancamento _buscarLancamento;
+    private readonly ListarLancamentos _listarLancamentos;
 
-    public LancamentoServiceConsultas()
+    public ConsultasDeLancamentoTestes()
     {
-        _service = new LancamentoService(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _buscarParDaTransacao = new BuscarParDaTransacao(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _buscarLancamento = new BuscarLancamento(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _listarLancamentos = new ListarLancamentos(_cenario.UnitOfWork.Object, _cenario.Mapper);
     }
 
     // ---- BuscarParDeLancamentos ----
@@ -25,7 +29,7 @@ public class LancamentoServiceConsultas
         _cenario.NovoLancamento(origem, -80m, idTransacao: 5);
         _cenario.NovoLancamento(origem, 999m, idTransacao: 6);
 
-        var resultado = await _service.BuscarParDeLancamentosAsync(5);
+        var resultado = await _buscarParDaTransacao.ExecutarAsync(5);
 
         Assert.True(resultado.IsSuccess);
         Assert.Equal(new[] { -80m, 80m }, resultado.Value.Select(l => l.Valor));
@@ -42,7 +46,7 @@ public class LancamentoServiceConsultas
         for (var i = 0; i < quantidade; i++)
             _cenario.NovoLancamento(conta, 10m, idTransacao: 5);
 
-        var resultado = await _service.BuscarParDeLancamentosAsync(5);
+        var resultado = await _buscarParDaTransacao.ExecutarAsync(5);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
     }
@@ -57,7 +61,7 @@ public class LancamentoServiceConsultas
         var conta = _cenario.NovaConta(1);
         var lancamento = _cenario.NovoLancamento(conta, 50m);
 
-        var resultado = await _service.BuscarAsync(lancamento.Id, idUsuario, eAdmin);
+        var resultado = await _buscarLancamento.ExecutarAsync(lancamento.Id, idUsuario, eAdmin);
 
         Assert.True(resultado.IsSuccess);
         Assert.Equal(lancamento.Id, resultado.Value.Id);
@@ -72,7 +76,7 @@ public class LancamentoServiceConsultas
         var contaDeOutro = _cenario.NovaConta(1, CenarioDeServico.IdOutroUsuario);
         _cenario.NovoLancamento(contaDeOutro, 50m, id: 1);
 
-        var resultado = await _service.BuscarAsync(idLancamento, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _buscarLancamento.ExecutarAsync(idLancamento, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
     }
@@ -88,7 +92,7 @@ public class LancamentoServiceConsultas
         _cenario.NovoLancamento(minha, -3m);
         _cenario.NovoLancamento(deOutro, 7m);
 
-        var lancamentos = await _service.ListarAsync(CenarioDeServico.IdDono, eAdmin: false);
+        var lancamentos = await _listarLancamentos.ExecutarAsync(CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.Equal(2, lancamentos.Count);
         Assert.All(lancamentos, l => Assert.Equal(minha.Numero, l.NumeroConta));
@@ -102,7 +106,7 @@ public class LancamentoServiceConsultas
         _cenario.NovoLancamento(minha, 10m);
         _cenario.NovoLancamento(deOutro, 7m);
 
-        var lancamentos = await _service.ListarAsync("id-do-admin", eAdmin: true);
+        var lancamentos = await _listarLancamentos.ExecutarAsync("id-do-admin", eAdmin: true);
 
         Assert.Equal(2, lancamentos.Count);
     }

@@ -1,21 +1,31 @@
 using Ledger.Application.Dtos.Contas;
 using Ledger.Application.Errors;
-using Ledger.Application.Services;
+using Ledger.Application.UseCases.Contas;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 
-namespace Ledger.Tests.Unitarios.Services;
+namespace Ledger.Tests.Unitarios.UseCases.Contas;
 
-public class ContaServiceTestes
+public class CasosDeUsoDeContaTestes
 {
     private readonly CenarioDeServico _cenario = new();
-    private readonly ContaService _service;
+    private readonly CriarConta _criarConta;
+    private readonly ListarContas _listarContas;
+    private readonly AtualizarConta _atualizarConta;
+    private readonly RemoverConta _removerConta;
+    private readonly BuscarConta _buscarConta;
+    private readonly EncerrarConta _encerrarConta;
 
-    public ContaServiceTestes()
+    public CasosDeUsoDeContaTestes()
     {
-        _service = new ContaService(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _criarConta = new CriarConta(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _listarContas = new ListarContas(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _atualizarConta = new AtualizarConta(_cenario.UnitOfWork.Object);
+        _removerConta = new RemoverConta(_cenario.UnitOfWork.Object);
+        _buscarConta = new BuscarConta(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _encerrarConta = new EncerrarConta(_cenario.UnitOfWork.Object);
     }
 
     // ---- Criar ----
@@ -30,7 +40,7 @@ public class ContaServiceTestes
             .Callback<Conta>(c => contaAdicionada = c)
             .Returns(Task.CompletedTask);
 
-        var resultado = await _service.CriarAsync(dto, CenarioDeServico.IdDono);
+        var resultado = await _criarConta.ExecutarAsync(dto, CenarioDeServico.IdDono);
 
         Assert.NotNull(contaAdicionada);
         Assert.Equal(CenarioDeServico.IdDono, contaAdicionada.IdUsuario);
@@ -54,7 +64,7 @@ public class ContaServiceTestes
         _cenario.NovoLancamento(poupanca, 50m);
         _cenario.NovoLancamento(contaDeOutroUsuario, 1000m);
 
-        var contas = await _service.ListarAsync(CenarioDeServico.IdDono, eAdmin: false);
+        var contas = await _listarContas.ExecutarAsync(CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.Equal(new[] { 1, 2, 3 }, contas.Select(c => c.Numero).Order());
         Assert.Equal(69.75m, contas.Single(c => c.Numero == 1).Saldo);
@@ -69,7 +79,7 @@ public class ContaServiceTestes
         var deOutro = _cenario.NovaConta(2, CenarioDeServico.IdOutroUsuario);
         _cenario.NovoLancamento(deOutro, 40m);
 
-        var contas = await _service.ListarAsync("id-do-admin", eAdmin: true);
+        var contas = await _listarContas.ExecutarAsync("id-do-admin", eAdmin: true);
 
         Assert.Equal(3, contas.Count);
         Assert.Contains(contas, c => c.Numero == CenarioDeServico.NumeroContaCaixa);
@@ -84,7 +94,7 @@ public class ContaServiceTestes
         var conta = _cenario.NovaConta(1);
         var cpfOriginal = conta.Cpf;
 
-        var resultado = await _service.AtualizarAsync(new UpdateContaDto { Nome = "Novo nome" }, 1, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _atualizarConta.ExecutarAsync(new UpdateContaDto { Nome = "Novo nome" }, 1, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.IsSuccess);
         Assert.Equal("Novo nome", conta.Nome);
@@ -102,7 +112,7 @@ public class ContaServiceTestes
     {
         _cenario.NovaConta(2, CenarioDeServico.IdOutroUsuario);
 
-        var resultado = await _service.AtualizarAsync(new UpdateContaDto { Nome = "X" }, numero, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _atualizarConta.ExecutarAsync(new UpdateContaDto { Nome = "X" }, numero, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
         _cenario.ContaRepository.Verify(r => r.AtualizarAsync(It.IsAny<Conta>()), Times.Never);
@@ -116,7 +126,7 @@ public class ContaServiceTestes
     {
         var conta = _cenario.NovaConta(1);
 
-        var resultado = await _service.RemoverAsync(1, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _removerConta.ExecutarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.IsSuccess);
         _cenario.ContaRepository.Verify(r => r.DeletarAsync(conta), Times.Once);
@@ -130,7 +140,7 @@ public class ContaServiceTestes
         _cenario.NovoLancamento(conta, 10m);
         _cenario.NovoLancamento(conta, -10m); 
 
-        var resultado = await _service.RemoverAsync(1, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _removerConta.ExecutarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<ConflitoError>());
         _cenario.ContaRepository.Verify(r => r.DeletarAsync(It.IsAny<Conta>()), Times.Never);
@@ -140,7 +150,7 @@ public class ContaServiceTestes
     [Fact]
     public async Task RemoverRetornaNaoEncontradoQuandoContaNaoExiste()
     {
-        var resultado = await _service.RemoverAsync(99, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _removerConta.ExecutarAsync(99, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
         _cenario.ContaRepository.Verify(r => r.DeletarAsync(It.IsAny<Conta>()), Times.Never);
@@ -157,7 +167,7 @@ public class ContaServiceTestes
         _cenario.NovoLancamento(conta, -50.50m);
         _cenario.NovoLancamento(outra, 1000m);
 
-        var resultado = await _service.BuscarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _buscarConta.ExecutarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.IsSuccess);
         Assert.Equal(149.50m, resultado.Value.Saldo);
@@ -169,7 +179,7 @@ public class ContaServiceTestes
     {
         _cenario.NovaConta(1, CenarioDeServico.IdOutroUsuario);
 
-        var resultado = await _service.BuscarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _buscarConta.ExecutarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
     }
@@ -184,7 +194,7 @@ public class ContaServiceTestes
         _cenario.NovoLancamento(conta, -100m);
         var antes = DateTime.UtcNow;
 
-        var resultado = await _service.EncerrarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _encerrarConta.ExecutarAsync(1, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.IsSuccess);
         Assert.NotNull(conta.DataEncerramento);
@@ -201,7 +211,7 @@ public class ContaServiceTestes
         _cenario.NovoLancamento(conta, decimal.Parse(saldo, System.Globalization.CultureInfo.InvariantCulture));
 
         await Assert.ThrowsAsync<SaldoEmContaExistenteException>(() =>
-            _service.EncerrarAsync(1, CenarioDeServico.IdDono, eAdmin: false));
+            _encerrarConta.ExecutarAsync(1, CenarioDeServico.IdDono, eAdmin: false));
 
         Assert.Null(conta.DataEncerramento);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
@@ -214,7 +224,7 @@ public class ContaServiceTestes
         var dataOriginal = conta.DataEncerramento;
 
         await Assert.ThrowsAsync<ContaEncerradaException>(() =>
-            _service.EncerrarAsync(1, CenarioDeServico.IdDono, eAdmin: false));
+            _encerrarConta.ExecutarAsync(1, CenarioDeServico.IdDono, eAdmin: false));
 
         Assert.Equal(dataOriginal, conta.DataEncerramento);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
@@ -223,7 +233,7 @@ public class ContaServiceTestes
     [Fact]
     public async Task EncerrarRetornaNaoEncontradoQuandoContaNaoExiste()
     {
-        var resultado = await _service.EncerrarAsync(99, CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _encerrarConta.ExecutarAsync(99, CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
@@ -239,8 +249,8 @@ public class ContaServiceTestes
         var numero = CenarioDeServico.NumeroContaCaixa;
 
         await Assert.ThrowsAsync<OperacaoNaoPermitidaException>(() => operacao == "atualizar"
-            ? _service.AtualizarAsync(new UpdateContaDto { Nome = "Outro nome" }, numero, "id-do-admin", eAdmin: true)
-            : _service.EncerrarAsync(numero, "id-do-admin", eAdmin: true));
+            ? _atualizarConta.ExecutarAsync(new UpdateContaDto { Nome = "Outro nome" }, numero, "id-do-admin", eAdmin: true)
+            : _encerrarConta.ExecutarAsync(numero, "id-do-admin", eAdmin: true));
 
         Assert.Null(_cenario.Caixa.DataEncerramento);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Never);
@@ -249,7 +259,7 @@ public class ContaServiceTestes
     [Fact]
     public async Task AdminNaoRemoveAContaCaixa()
     {
-        var resultado = await _service.RemoverAsync(CenarioDeServico.NumeroContaCaixa, "id-do-admin", eAdmin: true);
+        var resultado = await _removerConta.ExecutarAsync(CenarioDeServico.NumeroContaCaixa, "id-do-admin", eAdmin: true);
 
         Assert.True(resultado.HasError<ConflitoError>());
         Assert.Equal("A conta Caixa é do banco e não pode ser alterada", resultado.Errors[0].Message);

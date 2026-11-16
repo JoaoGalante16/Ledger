@@ -1,23 +1,23 @@
 using Ledger.Application.Dtos.Lancamentos;
 using Ledger.Application.Errors;
-using Ledger.Application.Services;
+using Ledger.Application.UseCases.Lancamentos;
 using Ledger.Domain.Enums;
 using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 
-namespace Ledger.Tests.Unitarios.Services;
+namespace Ledger.Tests.Unitarios.UseCases.Lancamentos;
 
-public class LancamentoServiceCorrecao
+public class CorrigirLancamentoTestes
 {
     private const int IdTransacaoOriginal = 7;
 
     private readonly CenarioDeServico _cenario = new();
-    private readonly LancamentoService _service;
+    private readonly CorrigirLancamento _corrigirLancamento;
 
-    public LancamentoServiceCorrecao()
+    public CorrigirLancamentoTestes()
     {
-        _service = new LancamentoService(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _corrigirLancamento = new CorrigirLancamento(_cenario.UnitOfWork.Object, _cenario.Mapper);
     }
 
     private static CreateLancamentoCorrecaoDto Correcao(decimal valor) => new()
@@ -37,7 +37,7 @@ public class LancamentoServiceCorrecao
         var debitoOriginal = _cenario.NovoLancamento(origem, -100m, IdTransacaoOriginal, id: 10);
         var creditoOriginal = _cenario.NovoLancamento(destino, 100m, IdTransacaoOriginal, id: 11);
         
-        var resultado = await _service.CriarLancamentoCorrecaoAsync(Correcao(100m));
+        var resultado = await _corrigirLancamento.ExecutarAsync(Correcao(100m));
         
         Assert.True(resultado.IsSuccess);
         Assert.Equal(2, _cenario.LancamentosAdicionados.Count);
@@ -66,7 +66,7 @@ public class LancamentoServiceCorrecao
     {
         _cenario.NovaConta(1);
 
-        var resultado = await _service.CriarLancamentoCorrecaoAsync(Correcao(100m));
+        var resultado = await _corrigirLancamento.ExecutarAsync(Correcao(100m));
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
         _cenario.VerificarQueNadaFoiGravado();
@@ -84,7 +84,7 @@ public class LancamentoServiceCorrecao
         _cenario.NovoLancamento(origem, -100m, IdTransacaoOriginal);
         _cenario.NovoLancamento(destino, 100m, IdTransacaoOriginal);
 
-        await Assert.ThrowsAsync<ContaEncerradaException>(() => _service.CriarLancamentoCorrecaoAsync(Correcao(100m)));
+        await Assert.ThrowsAsync<ContaEncerradaException>(() => _corrigirLancamento.ExecutarAsync(Correcao(100m)));
 
         _cenario.VerificarQueNadaFoiGravado();
     }
@@ -100,7 +100,7 @@ public class LancamentoServiceCorrecao
         _cenario.NovoLancamento(_cenario.Caixa, -100m, IdTransacaoOriginal).TipoOperacao = tipo;
         _cenario.NovoLancamento(conta, 100m, IdTransacaoOriginal).TipoOperacao = tipo;
 
-        var resultado = await _service.CriarLancamentoCorrecaoAsync(Correcao(100m));
+        var resultado = await _corrigirLancamento.ExecutarAsync(Correcao(100m));
 
         Assert.True(resultado.HasError<ConflitoError>());
         _cenario.VerificarQueNadaFoiGravado();
