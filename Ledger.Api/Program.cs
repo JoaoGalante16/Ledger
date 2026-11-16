@@ -1,5 +1,5 @@
-using Ledger.Application.Services;
 using Ledger.Domain.Repositories;
+using Ledger.Api.Extensions;
 using Ledger.Api.Handlers;
 using Ledger.Infrastructure.Data;
 using Ledger.Infrastructure.Data.Seeds;
@@ -56,8 +56,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-builder.Services.AddScoped<IContaService,ContaService>();
-builder.Services.AddScoped<ILancamentoService, LancamentoService>();
+builder.Services.AddCasosDeUso();
 
 builder.Services.AddScoped<SeedAdmin>();
 builder.Services.AddScoped<SeedContaCaixa>();

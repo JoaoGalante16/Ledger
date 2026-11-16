@@ -1,22 +1,22 @@
 using Ledger.Application.Dtos.Lancamentos;
 using Ledger.Application.Errors;
-using Ledger.Application.Services;
+using Ledger.Application.UseCases.Lancamentos;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Enums;
 using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 
-namespace Ledger.Tests.Unitarios.Services;
+namespace Ledger.Tests.Unitarios.UseCases.Lancamentos;
 
-public class LancamentoServiceCriar
+public class TransferirTestes
 {
     private readonly CenarioDeServico _cenario = new();
-    private readonly LancamentoService _service;
+    private readonly Transferir _transferir;
 
-    public LancamentoServiceCriar()
+    public TransferirTestes()
     {
-        _service = new LancamentoService(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _transferir = new Transferir(_cenario.UnitOfWork.Object, _cenario.Mapper);
     }
 
     private static CreateLancamentoDto Transferencia(int origem, int destino, decimal valor) => new()
@@ -37,7 +37,7 @@ public class LancamentoServiceCriar
         _cenario.DarSaldo(origem, 500m);
         var antes = DateTime.UtcNow;
 
-        var resultado = await _service.CriarAsync(Transferencia(1, 2, 120.50m), CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _transferir.ExecutarAsync(Transferencia(1, 2, 120.50m), CenarioDeServico.IdDono, eAdmin: false);
         var depois = DateTime.UtcNow;
 
         Assert.True(resultado.IsSuccess);
@@ -79,7 +79,7 @@ public class LancamentoServiceCriar
         _cenario.DarSaldo(contaDeOutro, 1000m);
 
         var resultado =
-            await _service.CriarAsync(Transferencia(numeroOrigem, 2, 10m), CenarioDeServico.IdDono, eAdmin: false);
+            await _transferir.ExecutarAsync(Transferencia(numeroOrigem, 2, 10m), CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
         Assert.Equal("Conta de origem não encontrada", resultado.Errors[0].Message);
@@ -93,7 +93,7 @@ public class LancamentoServiceCriar
         _cenario.NovaConta(2);
         _cenario.DarSaldo(origemDeOutro, 100m);
 
-        var resultado = await _service.CriarAsync(Transferencia(1, 2, 50m), "id-do-admin", eAdmin: true);
+        var resultado = await _transferir.ExecutarAsync(Transferencia(1, 2, 50m), "id-do-admin", eAdmin: true);
 
         Assert.True(resultado.IsSuccess);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Once);
@@ -105,7 +105,7 @@ public class LancamentoServiceCriar
         var origem = _cenario.NovaConta(1);
         _cenario.DarSaldo(origem, 100m);
 
-        var resultado = await _service.CriarAsync(Transferencia(1, 99, 10m), CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _transferir.ExecutarAsync(Transferencia(1, 99, 10m), CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.HasError<NaoEncontradoError>());
         Assert.Equal("Conta de destino não encontrada", resultado.Errors[0].Message);
@@ -124,7 +124,7 @@ public class LancamentoServiceCriar
         _cenario.DarSaldo(origem, 100m);
 
         await Assert.ThrowsAsync<ContaEncerradaException>(() =>
-            _service.CriarAsync(Transferencia(1, 2, 10m), CenarioDeServico.IdDono, eAdmin: false));
+            _transferir.ExecutarAsync(Transferencia(1, 2, 10m), CenarioDeServico.IdDono, eAdmin: false));
 
         _cenario.VerificarQueNadaFoiGravado();
     }
@@ -139,7 +139,7 @@ public class LancamentoServiceCriar
         _cenario.DarSaldo(origem, 99.99m);
 
         await Assert.ThrowsAsync<SaldoInsuficienteException>(() =>
-            _service.CriarAsync(Transferencia(1, 2, 100m), CenarioDeServico.IdDono, eAdmin: false));
+            _transferir.ExecutarAsync(Transferencia(1, 2, 100m), CenarioDeServico.IdDono, eAdmin: false));
 
         _cenario.VerificarQueNadaFoiGravado();
         _cenario.LancamentoRepository.Verify(r => r.ProximoIdTransacaoAsync(), Times.Never);
@@ -152,7 +152,7 @@ public class LancamentoServiceCriar
         _cenario.NovaConta(2);
         _cenario.DarSaldo(origem, 100m);
 
-        var resultado = await _service.CriarAsync(Transferencia(1, 2, 100m), CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _transferir.ExecutarAsync(Transferencia(1, 2, 100m), CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.IsSuccess);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Once);
@@ -168,7 +168,7 @@ public class LancamentoServiceCriar
         var conta = _cenario.NovaConta(1);
         _cenario.DarSaldo(conta, 100m);
 
-        var resultado = await _service.CriarAsync(Transferencia(origem, destino, 10m), "id-do-admin", eAdmin: true);
+        var resultado = await _transferir.ExecutarAsync(Transferencia(origem, destino, 10m), "id-do-admin", eAdmin: true);
 
         Assert.True(resultado.HasError<ConflitoError>());
         Assert.Equal("A conta Caixa é do banco e não pode ser movimentada diretamente", resultado.Errors[0].Message);

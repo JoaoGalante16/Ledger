@@ -1,23 +1,25 @@
 using FluentResults;
 using Ledger.Application.Dtos.Lancamentos;
 using Ledger.Application.Errors;
-using Ledger.Application.Services;
+using Ledger.Application.UseCases.Lancamentos;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Enums;
 using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
 using Moq;
 
-namespace Ledger.Tests.Unitarios.Services;
+namespace Ledger.Tests.Unitarios.UseCases.Lancamentos;
 
-public class LancamentoServiceDepositoESaque
+public class DepositarESacarTestes
 {
     private readonly CenarioDeServico _cenario = new();
-    private readonly LancamentoService _service;
+    private readonly Depositar _depositar;
+    private readonly Sacar _sacar;
 
-    public LancamentoServiceDepositoESaque()
+    public DepositarESacarTestes()
     {
-        _service = new LancamentoService(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _depositar = new Depositar(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _sacar = new Sacar(_cenario.UnitOfWork.Object, _cenario.Mapper);
     }
 
     private static CreateLancamentoDepositoOuSaque Operacao(int numeroConta, decimal valor) => new()
@@ -29,8 +31,8 @@ public class LancamentoServiceDepositoESaque
     private Task<Result<List<ReadLancamentoDto>>> ExecutarAsync(string operacao, int numeroConta, decimal valor,
         string idUsuario = CenarioDeServico.IdDono, bool eAdmin = false) =>
         operacao == "deposito"
-            ? _service.DepositarAsync(Operacao(numeroConta, valor), idUsuario, eAdmin)
-            : _service.SacarAsync(Operacao(numeroConta, valor), idUsuario, eAdmin);
+            ? _depositar.ExecutarAsync(Operacao(numeroConta, valor), idUsuario, eAdmin)
+            : _sacar.ExecutarAsync(Operacao(numeroConta, valor), idUsuario, eAdmin);
 
     // ---- Depósito ----
 
@@ -39,7 +41,7 @@ public class LancamentoServiceDepositoESaque
     {
         var conta = _cenario.NovaConta(1);
 
-        var resultado = await _service.DepositarAsync(Operacao(1, 200m), CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _depositar.ExecutarAsync(Operacao(1, 200m), CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.IsSuccess);
         var daCaixa = _cenario.LancamentosAdicionados.Single(l => l.NumeroConta == _cenario.Caixa.Numero);
@@ -59,7 +61,7 @@ public class LancamentoServiceDepositoESaque
     {
         _cenario.NovaConta(1);
 
-        var resultado = await _service.DepositarAsync(Operacao(1, 1000m), CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _depositar.ExecutarAsync(Operacao(1, 1000m), CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.IsSuccess);
     }
@@ -72,7 +74,7 @@ public class LancamentoServiceDepositoESaque
         var conta = _cenario.NovaConta(1);
         _cenario.DarSaldo(conta, 300m);
 
-        var resultado = await _service.SacarAsync(Operacao(1, 120.50m), CenarioDeServico.IdDono, eAdmin: false);
+        var resultado = await _sacar.ExecutarAsync(Operacao(1, 120.50m), CenarioDeServico.IdDono, eAdmin: false);
 
         Assert.True(resultado.IsSuccess);
         var daConta = _cenario.LancamentosAdicionados.Single(l => l.NumeroConta == conta.Numero);
@@ -90,7 +92,7 @@ public class LancamentoServiceDepositoESaque
         _cenario.DarSaldo(conta, 99.99m);
 
         await Assert.ThrowsAsync<SaldoInsuficienteException>(() =>
-            _service.SacarAsync(Operacao(1, 100m), CenarioDeServico.IdDono, eAdmin: false));
+            _sacar.ExecutarAsync(Operacao(1, 100m), CenarioDeServico.IdDono, eAdmin: false));
 
         _cenario.VerificarQueNadaFoiGravado();
     }
