@@ -23,13 +23,16 @@ public class Transferir
 
     public async Task<Result<List<ReadLancamentoDto>>> ExecutarAsync(CreateLancamentoDto dto, string idUsuario, bool eAdmin)
     {
-        var contaOrigem = await _unitOfWork.ContaRepository.BuscarAcessivelAsync(dto.NumeroContaOrigem, idUsuario, eAdmin);
-        var contaDestino = await _unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == dto.NumeroContaDestino);
+        await _unitOfWork.IniciarTransacaoAsync();
+        var contas = await _unitOfWork.ContaRepository.BloquearEBuscarAsync(dto.NumeroContaOrigem, dto.NumeroContaDestino);
+
+        var contaOrigem = contas.SingleOrDefault(c => c.Numero == dto.NumeroContaOrigem && c.PodeSerAcessadaPor(idUsuario, eAdmin));
+        var contaDestino = contas.SingleOrDefault(c => c.Numero == dto.NumeroContaDestino);
         if (contaOrigem is null) return Result.Fail(new NaoEncontradoError("Conta de origem não encontrada"));
         if (contaDestino is null) return Result.Fail(new NaoEncontradoError("Conta de destino não encontrada"));
 
-        var contaCaixa = await _unitOfWork.ContaRepository.BuscarContaCaixaAsync();
-        if (contaOrigem.Numero == contaCaixa.Numero || contaDestino.Numero == contaCaixa.Numero)
+        var numeroContaCaixa = await _unitOfWork.ContaRepository.BuscarNumeroContaCaixaAsync();
+        if (contaOrigem.Numero == numeroContaCaixa || contaDestino.Numero == numeroContaCaixa)
             return Result.Fail(new ConflitoError("A conta Caixa é do banco e não pode ser movimentada diretamente"));
 
         var valor = new Valor(dto.Valor);

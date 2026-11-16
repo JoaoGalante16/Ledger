@@ -38,6 +38,22 @@ public class ContaRepositoryBuscarContaCaixa : IAsyncLifetime
     }
 
     [Fact]
+    public async Task BuscarNumeroRetornaONumeroDaCaixa()
+    {
+        await using (var contextoDoSeed = _fixture.CriarContexto())
+        {
+            await new SeedContaCaixa(contextoDoSeed).CriarAsync();
+        }
+        await _fixture.CriarContaAsync(await _fixture.CriarUsuarioAsync());
+        await using var contexto = _fixture.CriarContexto();
+        var repositorio = new ContaRepository(contexto);
+
+        var numero = await repositorio.BuscarNumeroContaCaixaAsync();
+
+        Assert.Equal((await repositorio.BuscarContaCaixaAsync()).Numero, numero);
+    }
+
+    [Fact]
     public async Task SeedNaoDuplicaACaixaQuandoRodaDuasVezes()
     {
         await using (var contextoDoSeed = _fixture.CriarContexto())

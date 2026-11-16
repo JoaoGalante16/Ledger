@@ -22,4 +22,24 @@ public class ContaRepository : Repository<Conta>, IContaRepository
     {
         return await _context.Contas.SingleAsync(c => c.IdUsuario == ContaCaixa.IdUsuario);
     }
+
+    public Task<int> BuscarNumeroContaCaixaAsync()
+    {
+        return _context.Contas
+            .Where(c => c.IdUsuario == ContaCaixa.IdUsuario)
+            .Select(c => c.Numero)
+            .SingleAsync();
+    }
+
+    public async Task<List<Conta>> BloquearEBuscarAsync(params int[] numeros)
+    {
+        // FOR UPDATE trava as linhas até o fim da transacao, ordena por numero para travar as contas sempre na mesma ordem
+        await _context.Database.ExecuteSqlAsync(
+            $"SELECT 1 FROM \"Contas\" WHERE \"Numero\" = ANY({numeros}) ORDER BY \"Numero\" FOR UPDATE"); 
+        
+        return await _context.Contas
+            .Where(c => numeros.Contains(c.Numero))
+            .OrderBy(c => c.Numero)
+            .ToListAsync();
+    }
 }

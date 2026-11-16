@@ -28,12 +28,14 @@ public class CorrigirLancamento
         if (parReferencia[0].TipoOperacao is TipoOperacao.Deposito or TipoOperacao.Saque)
             return Result.Fail(new ConflitoError("Tipo de operação não aceita correção"));
 
-        var contaOrigem = await _unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == parReferencia[0].NumeroConta);
-        var contaDestino = await _unitOfWork.ContaRepository.BuscarPorPkAsync(c => c.Numero == parReferencia[1].NumeroConta);
+        await _unitOfWork.IniciarTransacaoAsync();
+        var contas = await _unitOfWork.ContaRepository.BloquearEBuscarAsync(parReferencia[0].NumeroConta, parReferencia[1].NumeroConta);
+        var contaOrigem = contas.Single(c => c.Numero == parReferencia[0].NumeroConta);
+        var contaDestino = contas.Single(c => c.Numero == parReferencia[1].NumeroConta);
 
         var valor = new Valor(dto.Valor);
-        contaOrigem!.Creditar(valor);
-        contaDestino!.Debitar(valor);
+        contaOrigem.Creditar(valor);
+        contaDestino.Debitar(valor);
 
         var idTransacao = await _unitOfWork.LancamentoRepository.ProximoIdTransacaoAsync();
 
