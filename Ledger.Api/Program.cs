@@ -1,6 +1,7 @@
 using Ledger.Domain.Repositories;
 using Ledger.Api.Extensions;
 using Ledger.Api.Handlers;
+using Ledger.Application.Profiles;
 using Ledger.Infrastructure.Data;
 using Ledger.Infrastructure.Data.Seeds;
 using Ledger.Infrastructure.Identity;
@@ -49,7 +50,7 @@ builder.Services.AddIdentityApiEndpoints<Usuario>().AddRoles<IdentityRole>().Add
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddAutoMapper(cfg => { }, typeof(ContaProfile).Assembly);
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
