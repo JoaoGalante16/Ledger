@@ -61,4 +61,29 @@ public class ContaEncerrar : IAsyncLifetime
         var problema = await resposta.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken);
         Assert.Equal("Não é possível encerrar a conta caixa", problema!.Detail);
     }
+
+    [Fact]
+    public async Task EncerrarEDepositarAoMesmoTempoNaoDeixaContaEncerradaComSaldo()
+    {
+        var cancelamento = TestContext.Current.CancellationToken;
+        using var joao = await _app.CriarClienteAutenticadoAsync("joao@teste.com");
+        var contas = new List<ReadContaDto>();
+        for (var i = 0; i < 10; i++)
+            contas.Add(await _app.CriarContaAsync(joao));
+
+        var operacoes = contas.SelectMany(conta => new[]
+        {
+            joao.PostAsJsonAsync("/Lancamento/deposito", new { numeroConta = conta.Numero, valor = 10m }, cancelamento),
+            joao.PostAsync($"/Conta/{conta.Numero}/encerrar", null, cancelamento)
+        });
+        await Task.WhenAll(operacoes);
+
+        await using var contexto = _app.CriarContexto();
+        var numeros = contas.Select(c => c.Numero).ToList();
+        var encerradasComSaldo = contexto.Contas
+            .Where(c => numeros.Contains(c.Numero))
+            .AsEnumerable()
+            .Count(c => c.DataEncerramento != null && c.Saldo.Value != 0);
+        Assert.Equal(0, encerradasComSaldo);
+    }
 }
