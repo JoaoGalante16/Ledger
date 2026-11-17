@@ -1,5 +1,6 @@
 using Ledger.Domain.Repositories;
 using Ledger.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Ledger.Infrastructure.Repositories;
 
@@ -9,6 +10,7 @@ public class UnitOfWork : IUnitOfWork
     
     private ContaRepository _contaRepository;
     private LancamentoRepository _lancamentoRepository;
+    private IDbContextTransaction? _transacao;
 
     public IContaRepository ContaRepository
     {
@@ -40,8 +42,18 @@ public class UnitOfWork : IUnitOfWork
         _context = context;
     }
     
+    public async Task IniciarTransacaoAsync()
+    {
+        _transacao = await _context.Database.BeginTransactionAsync();
+    }
+
     public async Task CommitAsync()
     {
         await _context.SaveChangesAsync();
+        if (_transacao is null) return;
+
+        await _transacao.CommitAsync();
+        await _transacao.DisposeAsync();
+        _transacao = null;
     }
 }

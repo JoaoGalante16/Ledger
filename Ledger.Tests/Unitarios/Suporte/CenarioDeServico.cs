@@ -80,6 +80,12 @@ public class CenarioDeServico
         ContaRepository
             .Setup(r => r.BuscarContaCaixaAsync())
             .ReturnsAsync(() => Caixa);
+        ContaRepository
+            .Setup(r => r.BuscarNumeroContaCaixaAsync())
+            .ReturnsAsync(() => Caixa.Numero);
+        ContaRepository
+            .Setup(r => r.BloquearEBuscarAsync(It.IsAny<int[]>()))
+            .ReturnsAsync((int[] numeros) => Contas.Where(c => numeros.Contains(c.Numero)).OrderBy(c => c.Numero).ToList());
     }
 
     public Conta NovaConta(int numero, string idUsuario = IdDono, bool encerrada = false)

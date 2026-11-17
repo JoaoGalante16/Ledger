@@ -6,4 +6,6 @@ public interface IContaRepository : IRepository<Conta>
 {
     Task<List<Conta>> BuscarPorUsuarioAsync(string idUsuario);
     Task<Conta> BuscarContaCaixaAsync();
+    Task<int> BuscarNumeroContaCaixaAsync();
+    Task<List<Conta>> BloquearEBuscarAsync(params int[] numeros);
 }

@@ -5,5 +5,6 @@ public interface IUnitOfWork
     IContaRepository ContaRepository { get; }
     ILancamentoRepository LancamentoRepository { get; }
 
+    Task IniciarTransacaoAsync();
     Task CommitAsync();
 }

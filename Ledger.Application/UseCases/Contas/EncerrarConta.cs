@@ -16,7 +16,10 @@ public class EncerrarConta
 
     public async Task<Result> ExecutarAsync(int numeroConta, string idUsuario, bool eAdmin)
     {
-        var conta = await _unitOfWork.ContaRepository.BuscarAcessivelAsync(numeroConta, idUsuario, eAdmin);
+        await _unitOfWork.IniciarTransacaoAsync();
+        var contas = await _unitOfWork.ContaRepository.BloquearEBuscarAsync(numeroConta);
+
+        var conta = contas.SingleOrDefault(c => c.PodeSerAcessadaPor(idUsuario, eAdmin));
         if (conta is null)
             return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
 

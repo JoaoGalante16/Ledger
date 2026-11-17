@@ -23,8 +23,12 @@ public class Sacar
 
     public async Task<Result<List<ReadLancamentoDto>>> ExecutarAsync(CreateLancamentoDepositoOuSaque dto, string idUsuario, bool eAdmin)
     {
-        var contaCaixa = await _unitOfWork.ContaRepository.BuscarContaCaixaAsync();
-        var contaCliente = await _unitOfWork.ContaRepository.BuscarAcessivelAsync(dto.NumeroConta, idUsuario, eAdmin);
+        await _unitOfWork.IniciarTransacaoAsync();
+        var numeroContaCaixa = await _unitOfWork.ContaRepository.BuscarNumeroContaCaixaAsync();
+        var contas = await _unitOfWork.ContaRepository.BloquearEBuscarAsync(dto.NumeroConta, numeroContaCaixa);
+
+        var contaCaixa = contas.Single(c => c.Numero == numeroContaCaixa);
+        var contaCliente = contas.SingleOrDefault(c => c.Numero == dto.NumeroConta && c.PodeSerAcessadaPor(idUsuario, eAdmin));
 
         if (contaCliente is null) return Result.Fail(new NaoEncontradoError("Conta não encontrada"));
 
