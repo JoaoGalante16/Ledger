@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Ledger.Application.Dtos.Lancamentos;
+using Ledger.Application.Dtos.Paginacao;
 using Ledger.Tests.Integracao.Api.Suporte;
 
 namespace Ledger.Tests.Integracao.Api.Lancamentos;
@@ -57,11 +58,28 @@ public class LancamentoGet : IAsyncLifetime
         await _app.DepositarAsync(contaDoJoao.Numero, 20m);
         await _app.DepositarAsync(contaDaMaria.Numero, 30m);
 
-        var lancamentos = await joao.GetFromJsonAsync<List<ReadLancamentoDto>>("/Lancamento", TestContext.Current.CancellationToken);
+        var pagina = await joao.GetFromJsonAsync<PaginaDto<ReadLancamentoDto>>("/Lancamento", TestContext.Current.CancellationToken);
 
-        Assert.NotNull(lancamentos);
-        Assert.Equal(2, lancamentos.Count);
-        Assert.All(lancamentos, l => Assert.Equal(contaDoJoao.Numero, l.NumeroConta));
+        Assert.NotNull(pagina);
+        Assert.Equal(2, pagina.Itens.Count);
+        Assert.All(pagina.Itens, l => Assert.Equal(contaDoJoao.Numero, l.NumeroConta));
+    }
+
+    [Fact]
+    public async Task PaginaOsLancamentosComOsMaisNovosPrimeiro()
+    {
+        using var joao = await _app.CriarClienteAutenticadoAsync("joao@teste.com");
+        var conta = await _app.CriarContaAsync(joao);
+        await _app.DepositarAsync(conta.Numero, 10m);
+        await _app.DepositarAsync(conta.Numero, 20m);
+        await _app.DepositarAsync(conta.Numero, 30m);
+
+        var pagina = await joao.GetFromJsonAsync<PaginaDto<ReadLancamentoDto>>("/Lancamento?pagina=1&tamanhoPagina=2", TestContext.Current.CancellationToken);
+
+        Assert.NotNull(pagina);
+        Assert.Equal(new[] { 30m, 20m }, pagina.Itens.Select(l => l.Valor));
+        Assert.Equal(3, pagina.TotalItens);
+        Assert.Equal(2, pagina.TotalPaginas);
     }
 
     [Fact]
@@ -75,11 +93,11 @@ public class LancamentoGet : IAsyncLifetime
         await _app.DepositarAsync(contaDoJoao.Numero, 10m);
         await _app.DepositarAsync(contaDaMaria.Numero, 30m);
 
-        var lancamentos = await admin.GetFromJsonAsync<List<ReadLancamentoDto>>("/Lancamento", TestContext.Current.CancellationToken);
+        var pagina = await admin.GetFromJsonAsync<PaginaDto<ReadLancamentoDto>>("/Lancamento", TestContext.Current.CancellationToken);
 
-        Assert.NotNull(lancamentos);
-        Assert.Equal(4, lancamentos.Count);
-        Assert.Contains(lancamentos, l => l.NumeroConta == contaDoJoao.Numero);
-        Assert.Contains(lancamentos, l => l.NumeroConta == contaDaMaria.Numero);
+        Assert.NotNull(pagina);
+        Assert.Equal(4, pagina.Itens.Count);
+        Assert.Contains(pagina.Itens, l => l.NumeroConta == contaDoJoao.Numero);
+        Assert.Contains(pagina.Itens, l => l.NumeroConta == contaDaMaria.Numero);
     }
 }

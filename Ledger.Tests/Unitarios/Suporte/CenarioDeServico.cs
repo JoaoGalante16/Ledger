@@ -35,21 +35,19 @@ public class CenarioDeServico
             .Setup(r => r.BuscarPorPkAsync(It.IsAny<Expression<Func<Conta, bool>>>()))
             .ReturnsAsync((Expression<Func<Conta, bool>> predicado) => Contas.FirstOrDefault(predicado.Compile()));
         ContaRepository
-            .Setup(r => r.BuscarTodosAsync())
-            .ReturnsAsync(() => Contas.ToList());
-        ContaRepository
-            .Setup(r => r.BuscarPorUsuarioAsync(It.IsAny<string>()))
-            .ReturnsAsync((string idUsuario) => Contas.Where(c => c.IdUsuario == idUsuario).ToList());
+            .Setup(r => r.BuscarPaginaAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>()))
+            .ReturnsAsync((int pagina, int tamanhoPagina, string? idUsuario) => Paginar(
+                Contas.Where(c => idUsuario == null || c.IdUsuario == idUsuario).OrderBy(c => c.Numero),
+                pagina, tamanhoPagina));
 
         LancamentoRepository
             .Setup(r => r.BuscarPorIdAsync(It.IsAny<Expression<Func<Lancamento, bool>>>()))
             .ReturnsAsync((Expression<Func<Lancamento, bool>> predicado) => Lancamentos.SingleOrDefault(predicado.Compile()));
         LancamentoRepository
-            .Setup(r => r.BuscarTodosAsync())
-            .ReturnsAsync(() => Lancamentos.ToList());
-        LancamentoRepository
-            .Setup(r => r.BuscarPorUsuarioAsync(It.IsAny<string>()))
-            .ReturnsAsync((string idUsuario) => Lancamentos.Where(l => l.Conta.IdUsuario == idUsuario).ToList());
+            .Setup(r => r.BuscarPaginaAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>()))
+            .ReturnsAsync((int pagina, int tamanhoPagina, string? idUsuario) => Paginar(
+                Lancamentos.Where(l => idUsuario == null || l.Conta.IdUsuario == idUsuario).OrderByDescending(l => l.Id),
+                pagina, tamanhoPagina));
         LancamentoRepository
             .Setup(r => r.BuscarPorTransacaoAsync(It.IsAny<int>()))
             .ReturnsAsync((int idTransacao) => Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor.Value).ToList());
@@ -118,6 +116,12 @@ public class CenarioDeServico
     }
     
     public void DarSaldo(Conta conta, decimal saldo) => NovoLancamento(conta, saldo, idTransacao: 900 + Lancamentos.Count);
+
+    private static Pagina<T> Paginar<T>(IEnumerable<T> itens, int pagina, int tamanhoPagina)
+    {
+        var lista = itens.ToList();
+        return new Pagina<T>(lista.Skip((pagina - 1) * tamanhoPagina).Take(tamanhoPagina).ToList(), lista.Count);
+    }
 
     private static void Definir(Conta conta, string propriedade, object? valor) =>
         typeof(Conta).GetProperty(propriedade)!.SetValue(conta, valor);

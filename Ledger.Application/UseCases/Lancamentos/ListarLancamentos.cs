@@ -1,6 +1,6 @@
 using AutoMapper;
 using Ledger.Application.Dtos.Lancamentos;
-using Ledger.Domain.Entities;
+using Ledger.Application.Dtos.Paginacao;
 using Ledger.Domain.Repositories;
 
 namespace Ledger.Application.UseCases.Lancamentos;
@@ -16,18 +16,17 @@ public class ListarLancamentos
         _mapper = mapper;
     }
 
-    public async Task<List<ReadLancamentoDto>> ExecutarAsync(string idUsuario, bool eAdmin)
+    public async Task<PaginaDto<ReadLancamentoDto>> ExecutarAsync(ParametrosPaginacaoDto paginacao, string idUsuario, bool eAdmin)
     {
-        List<Lancamento> lancamentos;
-        if (eAdmin)
-        {
-            lancamentos = await _unitOfWork.LancamentoRepository.BuscarTodosAsync();
-        }
-        else
-        {
-            lancamentos = await _unitOfWork.LancamentoRepository.BuscarPorUsuarioAsync(idUsuario);
-        }
+        var dono = eAdmin ? null : idUsuario;
+        var pagina = await _unitOfWork.LancamentoRepository.BuscarPaginaAsync(paginacao.Pagina, paginacao.TamanhoPagina, dono);
 
-        return _mapper.Map<List<ReadLancamentoDto>>(lancamentos);
+        return new PaginaDto<ReadLancamentoDto>
+        {
+            Itens = _mapper.Map<List<ReadLancamentoDto>>(pagina.Itens),
+            Pagina = paginacao.Pagina,
+            TamanhoPagina = paginacao.TamanhoPagina,
+            TotalItens = pagina.TotalItens
+        };
     }
 }

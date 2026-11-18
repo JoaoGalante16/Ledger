@@ -1,5 +1,6 @@
 using Ledger.Api.Extensions;
 using Ledger.Application.Dtos.Lancamentos;
+using Ledger.Application.Dtos.Paginacao;
 using Ledger.Application.UseCases.Lancamentos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,9 +22,9 @@ public class LancamentoController : ApiControllerBase
 
     [Authorize]
     [HttpGet]
-    public async Task<IActionResult> ListarLancamentos([FromServices] ListarLancamentos listarLancamentos)
+    public async Task<IActionResult> ListarLancamentos([FromQuery] ParametrosPaginacaoDto paginacao, [FromServices] ListarLancamentos listarLancamentos)
     {
-        var lancamentos = await listarLancamentos.ExecutarAsync(User.ObterId(), User.EhAdmin());
+        var lancamentos = await listarLancamentos.ExecutarAsync(paginacao, User.ObterId(), User.EhAdmin());
         return Ok(lancamentos);
     }
 

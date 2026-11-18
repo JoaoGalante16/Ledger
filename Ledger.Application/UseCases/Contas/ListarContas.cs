@@ -1,6 +1,6 @@
 using AutoMapper;
 using Ledger.Application.Dtos.Contas;
-using Ledger.Domain.Entities;
+using Ledger.Application.Dtos.Paginacao;
 using Ledger.Domain.Repositories;
 
 namespace Ledger.Application.UseCases.Contas;
@@ -16,18 +16,17 @@ public class ListarContas
         _mapper = mapper;
     }
 
-    public async Task<List<ReadContaDto>> ExecutarAsync(string idUsuario, bool eAdmin)
+    public async Task<PaginaDto<ReadContaDto>> ExecutarAsync(ParametrosPaginacaoDto paginacao, string idUsuario, bool eAdmin)
     {
-        List<Conta> contas;
-        if (eAdmin)
-        {
-            contas = await _unitOfWork.ContaRepository.BuscarTodosAsync();
-        }
-        else
-        {
-            contas = await _unitOfWork.ContaRepository.BuscarPorUsuarioAsync(idUsuario);
-        }
+        var dono = eAdmin ? null : idUsuario;
+        var pagina = await _unitOfWork.ContaRepository.BuscarPaginaAsync(paginacao.Pagina, paginacao.TamanhoPagina, dono);
 
-        return _mapper.Map<List<ReadContaDto>>(contas);
+        return new PaginaDto<ReadContaDto>
+        {
+            Itens = _mapper.Map<List<ReadContaDto>>(pagina.Itens),
+            Pagina = paginacao.Pagina,
+            TamanhoPagina = paginacao.TamanhoPagina,
+            TotalItens = pagina.TotalItens
+        };
     }
 }

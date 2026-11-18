@@ -13,9 +13,20 @@ public class ContaRepository : Repository<Conta>, IContaRepository
         
     }
 
-    public async Task<List<Conta>> BuscarPorUsuarioAsync(string idUsuario)
+    public async Task<Pagina<Conta>> BuscarPaginaAsync(int pagina, int tamanhoPagina, string? idUsuario = null)
     {
-        return await _context.Contas.Where(c => c.IdUsuario == idUsuario).ToListAsync();
+        var consulta = _context.Contas.AsQueryable();
+        if (idUsuario is not null)
+            consulta = consulta.Where(c => c.IdUsuario == idUsuario);
+
+        var totalItens = await consulta.CountAsync();
+        var itens = await consulta
+            .OrderBy(c => c.Numero)
+            .Skip((pagina - 1) * tamanhoPagina)
+            .Take(tamanhoPagina)
+            .ToListAsync();
+
+        return new Pagina<Conta>(itens, totalItens);
     }
 
     public async Task<Conta> BuscarContaCaixaAsync()

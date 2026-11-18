@@ -1,5 +1,6 @@
 using Ledger.Api.Extensions;
 using Ledger.Application.Dtos.Contas;
+using Ledger.Application.Dtos.Paginacao;
 using Ledger.Application.UseCases.Contas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,9 +21,9 @@ public class ContaController : ApiControllerBase
 
     [Authorize]
     [HttpGet]
-    public async Task<IActionResult> ListarContas([FromServices] ListarContas listarContas)
+    public async Task<IActionResult> ListarContas([FromQuery] ParametrosPaginacaoDto paginacao, [FromServices] ListarContas listarContas)
     {
-        var contas = await listarContas.ExecutarAsync(User.ObterId(), User.EhAdmin());
+        var contas = await listarContas.ExecutarAsync(paginacao, User.ObterId(), User.EhAdmin());
         return Ok(contas);
     }
 

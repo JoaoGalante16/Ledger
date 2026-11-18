@@ -1,6 +1,7 @@
 using System.Globalization;
 using Ledger.Application.Dtos.Contas;
 using Ledger.Application.Dtos.Lancamentos;
+using Ledger.Application.Dtos.Paginacao;
 using Ledger.Tests.Unitarios.Suporte;
 
 namespace Ledger.Tests.Unitarios.Validacao;
@@ -159,5 +160,28 @@ public class DtosValidacao
         var dto = new UpdateContaDto { Nome = tamanho is null ? null! : new string('a', tamanho.Value) };
 
         Assert.Equal(!valido, Validador.TemErroEm(dto, nameof(UpdateContaDto.Nome)));
+    }
+
+    // ---- ParametrosPaginacaoDto ----
+
+    [Fact]
+    public void ParametrosPaginacaoDtoComecaNaPrimeiraPaginaCom20Itens()
+    {
+        var dto = new ParametrosPaginacaoDto();
+
+        Assert.Equal(1, dto.Pagina);
+        Assert.Equal(20, dto.TamanhoPagina);
+        Assert.Empty(Validador.Validar(dto));
+    }
+
+    [Theory]
+    [InlineData(0, 20, nameof(ParametrosPaginacaoDto.Pagina))]
+    [InlineData(1, 0, nameof(ParametrosPaginacaoDto.TamanhoPagina))]
+    [InlineData(1, 101, nameof(ParametrosPaginacaoDto.TamanhoPagina))]
+    public void ParametrosPaginacaoDtoRejeitaValoresForaDoLimite(int pagina, int tamanhoPagina, string propriedadeComErro)
+    {
+        var dto = new ParametrosPaginacaoDto { Pagina = pagina, TamanhoPagina = tamanhoPagina };
+
+        Assert.True(Validador.TemErroEm(dto, propriedadeComErro));
     }
 }

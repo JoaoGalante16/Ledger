@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Ledger.Application.Dtos.Contas;
+using Ledger.Application.Dtos.Paginacao;
 using Ledger.Tests.Integracao.Api.Suporte;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,11 +29,23 @@ public class ContaGet : IAsyncLifetime
         var contaDoJoao = await _app.CriarContaAsync(joao);
         await _app.CriarContaAsync(maria);
 
-        var contas = await joao.GetFromJsonAsync<List<ReadContaDto>>("/Conta", TestContext.Current.CancellationToken);
+        var pagina = await joao.GetFromJsonAsync<PaginaDto<ReadContaDto>>("/Conta", TestContext.Current.CancellationToken);
 
-        Assert.NotNull(contas);
-        var conta = Assert.Single(contas);
+        Assert.NotNull(pagina);
+        var conta = Assert.Single(pagina.Itens);
         Assert.Equal(contaDoJoao.Numero, conta.Numero);
+    }
+
+    [Fact]
+    public async Task TamanhoDePaginaAcimaDoLimiteDevolve400()
+    {
+        using var joao = await _app.CriarClienteAutenticadoAsync("joao@teste.com");
+
+        var resposta = await joao.GetAsync("/Conta?tamanhoPagina=101", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+        var problema = await resposta.Content.ReadFromJsonAsync<ValidationProblemDetails>(TestContext.Current.CancellationToken);
+        Assert.Contains("TamanhoPagina", problema!.Errors.Keys);
     }
 
     [Fact]
