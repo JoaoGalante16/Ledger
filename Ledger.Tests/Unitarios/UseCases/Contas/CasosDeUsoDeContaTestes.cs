@@ -5,6 +5,7 @@ using Ledger.Application.UseCases.Contas;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Ledger.Tests.Unitarios.UseCases.Contas;
@@ -21,12 +22,12 @@ public class CasosDeUsoDeContaTestes
 
     public CasosDeUsoDeContaTestes()
     {
-        _criarConta = new CriarConta(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _criarConta = new CriarConta(_cenario.UnitOfWork.Object, _cenario.Mapper, NullLogger<CriarConta>.Instance);
         _listarContas = new ListarContas(_cenario.UnitOfWork.Object, _cenario.Mapper);
         _atualizarConta = new AtualizarConta(_cenario.UnitOfWork.Object);
         _removerConta = new RemoverConta(_cenario.UnitOfWork.Object);
         _buscarConta = new BuscarConta(_cenario.UnitOfWork.Object, _cenario.Mapper);
-        _encerrarConta = new EncerrarConta(_cenario.UnitOfWork.Object);
+        _encerrarConta = new EncerrarConta(_cenario.UnitOfWork.Object, NullLogger<EncerrarConta>.Instance);
     }
 
     // ---- Criar ----
@@ -49,6 +50,20 @@ public class CasosDeUsoDeContaTestes
         Assert.Equal("52998224725", resultado.Cpf);
         Assert.Equal(0m, resultado.Saldo);
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task CriarNaoLogaOCpfNemONome()
+    {
+        var logger = new LoggerDeTeste<CriarConta>();
+        var criarConta = new CriarConta(_cenario.UnitOfWork.Object, _cenario.Mapper, logger);
+
+        await criarConta.ExecutarAsync(new CreateContaDto { Nome = "Maria Souza", Cpf = "52998224725" }, CenarioDeServico.IdDono);
+
+        var registro = Assert.Single(logger.Registros);
+        Assert.DoesNotContain("52998224725", registro.Mensagem);
+        Assert.DoesNotContain("Maria Souza", registro.Mensagem);
+        Assert.DoesNotContain(registro.Campos.Values, valor => valor is "52998224725" or "Maria Souza");
     }
 
     // ---- Listar ----

@@ -6,6 +6,8 @@ using Ledger.Domain.Entities;
 using Ledger.Domain.Enums;
 using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Ledger.Tests.Unitarios.UseCases.Lancamentos;
@@ -15,11 +17,12 @@ public class DepositarESacarTestes
     private readonly CenarioDeServico _cenario = new();
     private readonly Depositar _depositar;
     private readonly Sacar _sacar;
+    private readonly LoggerDeTeste<Sacar> _loggerDoSaque = new();
 
     public DepositarESacarTestes()
     {
-        _depositar = new Depositar(_cenario.UnitOfWork.Object, _cenario.Mapper);
-        _sacar = new Sacar(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _depositar = new Depositar(_cenario.UnitOfWork.Object, _cenario.Mapper, NullLogger<Depositar>.Instance);
+        _sacar = new Sacar(_cenario.UnitOfWork.Object, _cenario.Mapper, _loggerDoSaque);
     }
 
     private static CreateLancamentoDepositoOuSaque Operacao(int numeroConta, decimal valor) => new()
@@ -83,6 +86,21 @@ public class DepositarESacarTestes
         Assert.Equal(120.50m, naCaixa.Valor.Value);
         Assert.All(_cenario.LancamentosAdicionados, l => Assert.Equal(TipoOperacao.Saque, l.TipoOperacao));
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task SaqueLogaATransacaoComOsCamposSeparados()
+    {
+        var conta = _cenario.NovaConta(1);
+        _cenario.DarSaldo(conta, 300m);
+
+        await _sacar.ExecutarAsync(Operacao(1, 120.50m), CenarioDeServico.IdDono, eAdmin: false);
+
+        var registro = Assert.Single(_loggerDoSaque.Registros);
+        Assert.Equal(LogLevel.Information, registro.Nivel);
+        Assert.Equal(CenarioDeServico.ProximoIdTransacao, registro.Campos["IdTransacao"]);
+        Assert.Equal(120.50m, registro.Campos["Valor"]);
+        Assert.Equal(1, registro.Campos["NumeroConta"]);
     }
 
     [Fact]

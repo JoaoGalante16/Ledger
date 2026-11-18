@@ -9,8 +9,23 @@ using Ledger.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using Serilog.Formatting.Compact;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, configuracao) =>
+{
+    configuracao
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext();
+
+    if (context.HostingEnvironment.IsDevelopment())
+        configuracao.WriteTo.Console();
+    else
+        configuracao.WriteTo.Console(new RenderedCompactJsonFormatter());
+});
 
 builder.Services.AddControllers();
 
@@ -64,6 +79,11 @@ builder.Services.AddScoped<SeedContaCaixa>();
 
 var app = builder.Build();
 
+app.UseSerilogRequestLogging(opcoes =>
+{
+    opcoes.EnrichDiagnosticContext = (diagnostico, httpContext) =>
+        diagnostico.Set("IdUsuario", httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
+});
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 

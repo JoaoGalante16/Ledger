@@ -7,6 +7,7 @@ using Ledger.Domain.Entities;
 using Ledger.Domain.Enums;
 using Ledger.Domain.Repositories;
 using Ledger.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
 
 namespace Ledger.Application.UseCases.Lancamentos;
 
@@ -14,11 +15,13 @@ public class Depositar
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ILogger<Depositar> _logger;
 
-    public Depositar(IUnitOfWork unitOfWork, IMapper mapper)
+    public Depositar(IUnitOfWork unitOfWork, IMapper mapper, ILogger<Depositar> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<Result<List<ReadLancamentoDto>>> ExecutarAsync(CreateLancamentoDepositoOuSaque dto, string idUsuario, bool eAdmin)
@@ -59,6 +62,7 @@ public class Depositar
         await _unitOfWork.LancamentoRepository.AdicionarAsync(lancamentoOrigem);
         await _unitOfWork.LancamentoRepository.AdicionarAsync(lancamentoDestino);
         await _unitOfWork.CommitAsync();
+        _logger.LogInformation("Depósito {IdTransacao} de {Valor} na conta {NumeroConta}", idTransacao, dto.Valor, contaCliente.Numero);
 
         var listaReadDto = _mapper.Map<List<ReadLancamentoDto>>(new[] { lancamentoOrigem, lancamentoDestino });
         return Result.Ok(listaReadDto);
