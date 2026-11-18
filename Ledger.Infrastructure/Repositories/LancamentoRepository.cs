@@ -15,9 +15,20 @@ public class LancamentoRepository : ILancamentoRepository
         _context = context;
     }
 
-    public async Task<List<Lancamento>> BuscarTodosAsync()
+    public async Task<Pagina<Lancamento>> BuscarPaginaAsync(int pagina, int tamanhoPagina, string? idUsuario = null)
     {
-        return await _context.Lancamentos.ToListAsync();
+        var consulta = _context.Lancamentos.AsQueryable();
+        if (idUsuario is not null)
+            consulta = consulta.Where(l => l.Conta.IdUsuario == idUsuario);
+
+        var totalItens = await consulta.CountAsync();
+        var itens = await consulta
+            .OrderByDescending(l => l.Id)
+            .Skip((pagina - 1) * tamanhoPagina)
+            .Take(tamanhoPagina)
+            .ToListAsync();
+
+        return new Pagina<Lancamento>(itens, totalItens);
     }
 
     public Task<Lancamento?> BuscarPorIdAsync(Expression<Func<Lancamento, bool>> predicate)
@@ -42,11 +53,6 @@ public class LancamentoRepository : ILancamentoRepository
        return await _context.Lancamentos.AnyAsync(l => l.NumeroConta == numeroConta);
     }
     
-    public async Task<List<Lancamento>> BuscarPorUsuarioAsync(string idUsuario)
-    {
-        return await _context.Lancamentos.Where(l => l.Conta.IdUsuario == idUsuario).ToListAsync();
-    }
-
     public Task<List<Lancamento>> BuscarPorTransacaoAsync(int idTransacao)
     {
         return _context.Lancamentos.Where(l => l.IdTransacao == idTransacao).OrderBy(l => l.Valor.Value).ToListAsync();

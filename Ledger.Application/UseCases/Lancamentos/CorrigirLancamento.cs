@@ -6,6 +6,7 @@ using Ledger.Domain.Entities;
 using Ledger.Domain.Enums;
 using Ledger.Domain.Repositories;
 using Ledger.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
 
 namespace Ledger.Application.UseCases.Lancamentos;
 
@@ -13,11 +14,13 @@ public class CorrigirLancamento
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ILogger<CorrigirLancamento> _logger;
 
-    public CorrigirLancamento(IUnitOfWork unitOfWork, IMapper mapper)
+    public CorrigirLancamento(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CorrigirLancamento> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<Result<List<ReadLancamentoDto>>> ExecutarAsync(CreateLancamentoCorrecaoDto dto)
@@ -59,6 +62,8 @@ public class CorrigirLancamento
         await _unitOfWork.LancamentoRepository.AdicionarAsync(lancamentoOrigemCorrecao);
         await _unitOfWork.LancamentoRepository.AdicionarAsync(lancamentoDestinoCorrecao);
         await _unitOfWork.CommitAsync();
+        _logger.LogInformation("Correção {IdTransacao} da transação {IdTransacaoReferencia} no valor de {Valor}",
+            idTransacao, dto.IdLancamentoReferencia, dto.Valor);
 
         var listaReadDto = _mapper.Map<List<ReadLancamentoDto>>(new[] { lancamentoOrigemCorrecao, lancamentoDestinoCorrecao });
         return Result.Ok(listaReadDto);

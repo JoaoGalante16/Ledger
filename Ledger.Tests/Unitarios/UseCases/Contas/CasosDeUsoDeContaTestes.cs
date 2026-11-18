@@ -1,9 +1,11 @@
 using Ledger.Application.Dtos.Contas;
+using Ledger.Application.Dtos.Paginacao;
 using Ledger.Application.Errors;
 using Ledger.Application.UseCases.Contas;
 using Ledger.Domain.Entities;
 using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Ledger.Tests.Unitarios.UseCases.Contas;
@@ -20,12 +22,12 @@ public class CasosDeUsoDeContaTestes
 
     public CasosDeUsoDeContaTestes()
     {
-        _criarConta = new CriarConta(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _criarConta = new CriarConta(_cenario.UnitOfWork.Object, _cenario.Mapper, NullLogger<CriarConta>.Instance);
         _listarContas = new ListarContas(_cenario.UnitOfWork.Object, _cenario.Mapper);
         _atualizarConta = new AtualizarConta(_cenario.UnitOfWork.Object);
         _removerConta = new RemoverConta(_cenario.UnitOfWork.Object);
         _buscarConta = new BuscarConta(_cenario.UnitOfWork.Object, _cenario.Mapper);
-        _encerrarConta = new EncerrarConta(_cenario.UnitOfWork.Object);
+        _encerrarConta = new EncerrarConta(_cenario.UnitOfWork.Object, NullLogger<EncerrarConta>.Instance);
     }
 
     // ---- Criar ----
@@ -50,6 +52,20 @@ public class CasosDeUsoDeContaTestes
         _cenario.UnitOfWork.Verify(u => u.CommitAsync(), Times.Once);
     }
 
+    [Fact]
+    public async Task CriarNaoLogaOCpfNemONome()
+    {
+        var logger = new LoggerDeTeste<CriarConta>();
+        var criarConta = new CriarConta(_cenario.UnitOfWork.Object, _cenario.Mapper, logger);
+
+        await criarConta.ExecutarAsync(new CreateContaDto { Nome = "Maria Souza", Cpf = "52998224725" }, CenarioDeServico.IdDono);
+
+        var registro = Assert.Single(logger.Registros);
+        Assert.DoesNotContain("52998224725", registro.Mensagem);
+        Assert.DoesNotContain("Maria Souza", registro.Mensagem);
+        Assert.DoesNotContain(registro.Campos.Values, valor => valor is "52998224725" or "Maria Souza");
+    }
+
     // ---- Listar ----
 
     [Fact]
@@ -64,9 +80,9 @@ public class CasosDeUsoDeContaTestes
         _cenario.NovoLancamento(poupanca, 50m);
         _cenario.NovoLancamento(contaDeOutroUsuario, 1000m);
 
-        var contas = await _listarContas.ExecutarAsync(CenarioDeServico.IdDono, eAdmin: false);
+        var contas = (await _listarContas.ExecutarAsync(new ParametrosPaginacaoDto(), CenarioDeServico.IdDono, eAdmin: false)).Itens;
 
-        Assert.Equal(new[] { 1, 2, 3 }, contas.Select(c => c.Numero).Order());
+        Assert.Equal(new[] { 1, 2, 3 }, contas.Select(c => c.Numero));
         Assert.Equal(69.75m, contas.Single(c => c.Numero == 1).Saldo);
         Assert.Equal(50m, contas.Single(c => c.Numero == 2).Saldo);
         Assert.Equal(0m, contas.Single(c => c.Numero == 3).Saldo);
@@ -79,11 +95,26 @@ public class CasosDeUsoDeContaTestes
         var deOutro = _cenario.NovaConta(2, CenarioDeServico.IdOutroUsuario);
         _cenario.NovoLancamento(deOutro, 40m);
 
-        var contas = await _listarContas.ExecutarAsync("id-do-admin", eAdmin: true);
+        var contas = (await _listarContas.ExecutarAsync(new ParametrosPaginacaoDto(), "id-do-admin", eAdmin: true)).Itens;
 
         Assert.Equal(3, contas.Count);
         Assert.Contains(contas, c => c.Numero == CenarioDeServico.NumeroContaCaixa);
         Assert.Equal(40m, contas.Single(c => c.Numero == 2).Saldo);
+    }
+
+    [Fact]
+    public async Task ListarDevolveAPaginaPedidaComOTotal()
+    {
+        for (var numero = 1; numero <= 5; numero++)
+            _cenario.NovaConta(numero);
+
+        var pagina = await _listarContas.ExecutarAsync(new ParametrosPaginacaoDto { Pagina = 3, TamanhoPagina = 2 }, CenarioDeServico.IdDono, eAdmin: false);
+
+        Assert.Equal(new[] { 5 }, pagina.Itens.Select(c => c.Numero));
+        Assert.Equal(3, pagina.Pagina);
+        Assert.Equal(2, pagina.TamanhoPagina);
+        Assert.Equal(5, pagina.TotalItens);
+        Assert.Equal(3, pagina.TotalPaginas);
     }
 
     // ---- Atualizar ----

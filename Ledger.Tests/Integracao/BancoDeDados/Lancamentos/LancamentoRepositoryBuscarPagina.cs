@@ -4,11 +4,11 @@ using Ledger.Tests.Integracao.BancoDeDados.Suporte;
 namespace Ledger.Tests.Integracao.BancoDeDados.Lancamentos;
 
 [Collection(nameof(ContextoCollection))]
-public class LancamentoRepositoryBuscarPorUsuario : IAsyncLifetime
+public class LancamentoRepositoryBuscarPagina : IAsyncLifetime
 {
     private readonly ContextoFixture _fixture;
 
-    public LancamentoRepositoryBuscarPorUsuario(ContextoFixture fixture)
+    public LancamentoRepositoryBuscarPagina(ContextoFixture fixture)
     {
         _fixture = fixture;
     }
@@ -30,9 +30,25 @@ public class LancamentoRepositoryBuscarPorUsuario : IAsyncLifetime
         await using var contexto = _fixture.CriarContexto();
         var repositorio = new LancamentoRepository(contexto);
 
-        var lancamentos = await repositorio.BuscarPorUsuarioAsync(joao.Id);
+        var pagina = await repositorio.BuscarPaginaAsync(1, 20, joao.Id);
 
-        Assert.Equal(2, lancamentos.Count);
-        Assert.All(lancamentos, l => Assert.Equal(contaDoJoao.Numero, l.NumeroConta));
+        Assert.Equal(2, pagina.TotalItens);
+        Assert.All(pagina.Itens, l => Assert.Equal(contaDoJoao.Numero, l.NumeroConta));
+    }
+
+    [Fact]
+    public async Task RetornaOsMaisNovosPrimeiroComOTotal()
+    {
+        var conta = await _fixture.CriarContaAsync(await _fixture.CriarUsuarioAsync());
+        await _fixture.CriarLancamentoAsync(conta, 10m);
+        var segundo = await _fixture.CriarLancamentoAsync(conta, 20m);
+        var terceiro = await _fixture.CriarLancamentoAsync(conta, -5m);
+        await using var contexto = _fixture.CriarContexto();
+        var repositorio = new LancamentoRepository(contexto);
+
+        var pagina = await repositorio.BuscarPaginaAsync(1, 2);
+
+        Assert.Equal(new[] { terceiro.Id, segundo.Id }, pagina.Itens.Select(l => l.Id));
+        Assert.Equal(3, pagina.TotalItens);
     }
 }

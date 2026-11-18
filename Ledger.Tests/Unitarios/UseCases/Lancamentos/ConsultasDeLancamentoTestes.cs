@@ -1,3 +1,4 @@
+using Ledger.Application.Dtos.Paginacao;
 using Ledger.Application.Errors;
 using Ledger.Application.UseCases.Lancamentos;
 using Ledger.Tests.Unitarios.Suporte;
@@ -92,7 +93,7 @@ public class ConsultasDeLancamentoTestes
         _cenario.NovoLancamento(minha, -3m);
         _cenario.NovoLancamento(deOutro, 7m);
 
-        var lancamentos = await _listarLancamentos.ExecutarAsync(CenarioDeServico.IdDono, eAdmin: false);
+        var lancamentos = (await _listarLancamentos.ExecutarAsync(new ParametrosPaginacaoDto(), CenarioDeServico.IdDono, eAdmin: false)).Itens;
 
         Assert.Equal(2, lancamentos.Count);
         Assert.All(lancamentos, l => Assert.Equal(minha.Numero, l.NumeroConta));
@@ -106,7 +107,7 @@ public class ConsultasDeLancamentoTestes
         _cenario.NovoLancamento(minha, 10m);
         _cenario.NovoLancamento(deOutro, 7m);
 
-        var lancamentos = await _listarLancamentos.ExecutarAsync("id-do-admin", eAdmin: true);
+        var lancamentos = (await _listarLancamentos.ExecutarAsync(new ParametrosPaginacaoDto(), "id-do-admin", eAdmin: true)).Itens;
 
         Assert.Equal(2, lancamentos.Count);
     }

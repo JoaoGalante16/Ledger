@@ -4,6 +4,7 @@ using Ledger.Application.UseCases.Lancamentos;
 using Ledger.Domain.Enums;
 using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Ledger.Tests.Unitarios.UseCases.Lancamentos;
@@ -17,7 +18,7 @@ public class CorrigirLancamentoTestes
 
     public CorrigirLancamentoTestes()
     {
-        _corrigirLancamento = new CorrigirLancamento(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _corrigirLancamento = new CorrigirLancamento(_cenario.UnitOfWork.Object, _cenario.Mapper, NullLogger<CorrigirLancamento>.Instance);
     }
 
     private static CreateLancamentoCorrecaoDto Correcao(decimal valor) => new()

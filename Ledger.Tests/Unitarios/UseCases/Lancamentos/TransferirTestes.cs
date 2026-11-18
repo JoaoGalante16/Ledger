@@ -5,6 +5,7 @@ using Ledger.Domain.Entities;
 using Ledger.Domain.Enums;
 using Ledger.Domain.Exceptions;
 using Ledger.Tests.Unitarios.Suporte;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Ledger.Tests.Unitarios.UseCases.Lancamentos;
@@ -16,7 +17,7 @@ public class TransferirTestes
 
     public TransferirTestes()
     {
-        _transferir = new Transferir(_cenario.UnitOfWork.Object, _cenario.Mapper);
+        _transferir = new Transferir(_cenario.UnitOfWork.Object, _cenario.Mapper, NullLogger<Transferir>.Instance);
     }
 
     private static CreateLancamentoDto Transferencia(int origem, int destino, decimal valor) => new()
